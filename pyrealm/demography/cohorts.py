@@ -98,7 +98,7 @@ def create_cohorts(
     if len(shape) > 1:
         raise ValueError("Inputs must be 1 dimensional arrays")
 
-    unknown_pfts = set(pft_name).difference(flora.name)
+    unknown_pfts = set(pft_name).difference(flora.pft_name)
     if unknown_pfts:
         raise ValueError(
             f"PFTs in cohort data not present in flora: {','.join(unknown_pfts)}"
@@ -107,10 +107,13 @@ def create_cohorts(
     if np.any(dbh_value <= 0):
         raise ValueError("DBH values must be strictly positive")
 
-    if (not np.issubdtype(n_individuals.dtype, np.integer)) or np.any(
-        n_individuals <= 0
+    # For n_individuals, specifically allow empty arrays of any type but otherwise
+    # integers >= 0.
+    if n_individuals.size and (
+        (not np.issubdtype(n_individuals.dtype, np.integer))
+        or np.any(n_individuals < 0)
     ):
-        raise ValueError("The number of individuals must be positive integers")
+        raise ValueError("The number of individuals must be integers >= 0.")
 
     columns = {
         "pft_name": pft_name,
@@ -123,7 +126,7 @@ def create_cohorts(
     # convert to pandas
     cohorts_df = Cohorts(columns)
 
-    cohorts = cohorts_df.merge(flora_df, left_on="pft_name", right_on="name")
+    cohorts = cohorts_df.merge(flora_df, on="pft_name")
     cohorts.insert(0, "cohort_id", [next(cid_generator) for idx in range(shape[0])])
 
     return cohorts

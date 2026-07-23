@@ -514,7 +514,7 @@ def test_StemAllometry_StemAllocation_GrowthIncrements(
     # Generate cohort
     cid_gen = cohort_id_generator()
     cohorts = create_cohorts(
-        pft_name=np.array(rtmodel_flora.name),
+        pft_name=np.array(rtmodel_flora.pft_name),
         n_individuals=np.array([1, 1, 1]),
         dbh_value=rtmodel_data["dbh"][dbh_idx],
         cid_generator=cid_gen,
@@ -533,7 +533,7 @@ def test_StemAllometry_StemAllocation_GrowthIncrements(
         for v in stem_allometry._array_attrs
         if v
         not in [
-            "cohort_ids",
+            "cohort_id",
             "crown_r0",
             "crown_z_max",
             "fine_root_mass",
@@ -575,7 +575,7 @@ def test_StemAllometry_StemAllocation_GrowthIncrements(
         for v in stem_allocation._array_attrs
         if v
         not in [
-            "cohort_ids",
+            "cohort_id",
             "foliage_respiration",
             "foliage_turnover",
             "fine_root_turnover",
@@ -653,7 +653,7 @@ def test_StemAllocation_GPP_inputs(
     ## Generate cohort data and calculate the allometry and allocation
     cid_gen = cohort_id_generator()
     cohorts = create_cohorts(
-        pft_name=np.array(rtmodel_flora.name),
+        pft_name=np.array(rtmodel_flora.pft_name),
         n_individuals=np.array([1, 1, 1]),
         dbh_value=np.array([0.5, 0.5, 0.5]),
         flora=rtmodel_flora,
@@ -666,7 +666,7 @@ def test_StemAllocation_GPP_inputs(
 
     # Check the attribute shape
     assert alloc.whole_crown_gpp.shape == exp_shape
-    assert alloc.cohort_ids.shape == exp_shape
+    assert alloc.cohort_id.shape == exp_shape
     assert alloc.foliage_respiration.shape == exp_shape
 
     # Check dataframe conversion and repr works

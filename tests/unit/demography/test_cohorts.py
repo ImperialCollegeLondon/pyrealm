@@ -29,10 +29,16 @@ import pytest
             id="valid_with_community",
         ),
         pytest.param(
-            {"pft_name": ["name"], "dbh_value": [1.0], "n_individuals": [12.2]},
-            pytest.raises(ValueError),
-            "The number of individuals must be positive integers",
-            id="non_integer_n_individuals",
+            {"pft_name": ["name"], "dbh_value": [1.0], "n_individuals": [0]},
+            does_not_raise(),
+            None,
+            id="valid with no individuals",
+        ),
+        pytest.param(
+            {"pft_name": [], "dbh_value": [], "n_individuals": []},
+            does_not_raise(),
+            None,
+            id="valid with empty lists",
         ),
         pytest.param(
             {"pft_name": ["name"], "dbh_value": [-1.0], "n_individuals": [12]},
@@ -41,10 +47,16 @@ import pytest
             id="negative_dbh",
         ),
         pytest.param(
-            {"pft_name": ["name"], "dbh_value": [1.0], "n_individuals": [0]},
+            {"pft_name": ["name"], "dbh_value": [1.0], "n_individuals": [12.2]},
             pytest.raises(ValueError),
-            "The number of individuals must be positive integers",
-            id="no_individuals",
+            "The number of individuals must be integers >= 0",
+            id="non_integer_n_individuals",
+        ),
+        pytest.param(
+            {"pft_name": ["name"], "dbh_value": [1.0], "n_individuals": [-50]},
+            pytest.raises(ValueError),
+            "The number of individuals must be integers >= 0",
+            id="negative individuals",
         ),
         pytest.param(
             {"pft_name": ["name"], "dbh_value": [1.0], "n_individuals": [12, 12]},
@@ -69,7 +81,7 @@ def test_create_cohorts(inputs, outcome, msg):
     from pyrealm.demography.cohorts import cohort_id_generator, create_cohorts
     from pyrealm.demography.flora import Flora
 
-    flora = Flora(name=["name"])
+    flora = Flora(pft_name=("name",))
     cid_gen = cohort_id_generator()
     inputs = {k: np.array(v) for k, v in inputs.items()}
 
@@ -112,7 +124,7 @@ def test_create_cohorts_from_csv(filename, outcome, expect_community):
 
     datapath = resources.files("pyrealm_build_data.community") / filename
     cid_gen = cohort_id_generator()
-    flora = Flora(name=["test1", "test2"])
+    flora = Flora(pft_name=("test1", "test2"))
 
     with outcome:
         cohort_data = create_cohorts_from_csv(
@@ -139,7 +151,7 @@ def test_Cohorts_with_Flora_extensibility():
     class FloraExtended(Flora):
         my_new_field: list[int] = [42]  # type: ignore[annotation-unchecked]  # noqa: RUF012
 
-    flora = FloraExtended(name=["test1", "test2"])
+    flora = FloraExtended(pft_name=("test1", "test2"))
 
     cohort_data = create_cohorts_from_csv(
         path=datapath, cid_generator=cid_gen, flora=flora

@@ -9,16 +9,6 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
-language_info:
-  name: python
-  version: 3.12.3
-  mimetype: text/x-python
-  codemirror_mode:
-    name: ipython
-    version: 3
-  pygments_lexer: ipython3
-  nbconvert_exporter: python
-  file_extension: .py
 ---
 
 # The tree crown model
@@ -238,11 +228,11 @@ a `Flora` object using the PFTs.
 ```{code-cell} ipython3
 # Generate a Flora instance using those PFTs
 flora = Flora(
-    name=["narrow", "medium", "wide"],
-    h_max=[20, 20, 20],
-    m=[1.5, 1.5, 4],
-    n=[1.5, 4, 1.5],
-    ca_ratio=[20, 500, 2000],
+    pft_name=("narrow", "medium", "wide"),
+    h_max=(20, 20, 20),
+    m=(1.5, 1.5, 4),
+    n=(1.5, 4, 1.5),
+    ca_ratio=(20, 500, 2000),
 )
 flora
 ```
@@ -251,7 +241,7 @@ The key canopy variables from the flora are:
 
 ```{code-cell} ipython3
 flora.to_dataframe()[
-    ["name", "h_max", "ca_ratio", "m", "n", "f_g", "q_m", "z_max_prop"]
+    ["pft_name", "h_max", "ca_ratio", "m", "n", "f_g", "q_m", "z_max_prop"]
 ]
 ```
 
@@ -414,12 +404,12 @@ but different shapes and gap fractions.
 
 ```{code-cell} ipython3
 flora = Flora(
-    name=["no_gaps", "few_gaps", "many_gaps"],
-    h_max=[20, 20, 20],
-    m=[1.5, 1.5, 4.0],
-    n=[1.5, 4.0, 1.5],
-    f_g=[0.0, 0.1, 0.3],
-    ca_ratio=[380, 400, 420],
+    pft_name=("no_gaps", "few_gaps", "many_gaps"),
+    h_max=(20, 20, 20),
+    m=(1.5, 1.5, 4.0),
+    n=(1.5, 4.0, 1.5),
+    f_g=(0.0, 0.1, 0.3),
+    ca_ratio=(380, 400, 420),
 )
 
 # Create an id generator.
@@ -496,7 +486,7 @@ for f_g in np.linspace(0, 1, num=11):
 
     # Create a flora with a single PFT with current f_g and then generate a
     # stem allometry and crown profile
-    flora = Flora(name=["pft"], h_max=[20], m=[2], n=[2], f_g=[f_g])
+    flora = Flora(pft_name=("pft",), h_max=(20,), m=(2,), n=(2,), f_g=(f_g,))
 
     # Create the cohorts
     cohorts = create_cohorts(
@@ -577,8 +567,8 @@ for cr_xy, (ch, cpr), (lh, lpr) in zip(
     crown_radius_as_xy, projected_crown_radius_xy, projected_leaf_radius_xy
 ):
     ax.add_patch(Polygon(cr_xy, color="lightgrey", fill=True))
-    ax.plot(cpr, ch, color="0.4", linewidth=2)
-    ax.plot(lpr, lh, color="red", linewidth=1)
+    ax.plot(ch, cpr, color="0.4", linewidth=2)
+    ax.plot(lh, lpr, color="red", linewidth=1)
 
 ax.set_aspect(0.5)
 _ = plt.legend(
@@ -592,4 +582,8 @@ _ = plt.legend(
     bbox_to_anchor=(0.5, 1.15),
     frameon=False,
 )
+```
+
+```{code-cell} ipython3
+
 ```

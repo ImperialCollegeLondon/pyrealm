@@ -101,44 +101,44 @@ class Flora(BaseModel):
       this is the rate at which total stem biomass turns over through branch loss.
     """
 
-    name: list[str] = ["default"]
+    pft_name: tuple[str, ...] = ("default",)
     r"""The name of the plant functional type."""
-    a_hd: list[float] = [116.0]
+    a_hd: tuple[float, ...] = (116.0,)
     r"""Initial slope of height-diameter relationship (:math:`a`, -)"""
-    ca_ratio: list[float] = [390.43]
+    ca_ratio: tuple[float, ...] = (390.43,)
     r"""Initial ratio of crown area to stem cross-sectional area (:math:`c`, -)"""
-    h_max: list[float] = [25.33]
+    h_max: tuple[float, ...] = (25.33,)
     r"""Maximum tree height (:math:`H_m`, m)"""
-    rho_s: list[float] = [200.0]
+    rho_s: tuple[float, ...] = (200.0,)
     r"""Sapwood density (:math:`\rho_s`, kg Cm-3)"""
-    lai: list[float] = [1.8]
+    lai: tuple[float, ...] = (1.8,)
     """Leaf area index within the crown (:math:`L`,  -)"""
-    sla: list[float] = [14.0]
+    sla: tuple[float, ...] = (14.0,)
     r"""Specific leaf area (:math:`\sigma`,  m2 kg-1 C)"""
-    tau_f: list[float] = [4.0]
+    tau_f: tuple[float, ...] = (4.0,)
     r"""Foliage turnover time (:math:`\tau_f`,years)"""
-    tau_r: list[float] = [1.04]
+    tau_r: tuple[float, ...] = (1.04,)
     r"""Fine-root turnover time (:math:`\tau_r`,  years)"""
-    tau_b: list[float] = [np.inf]
+    tau_b: tuple[float, ...] = (np.inf,)
     r"""Branch turnover time (:math:`\tau_b`,  years)"""
-    par_ext: list[float] = [0.5]
+    par_ext: tuple[float, ...] = (0.5,)
     r"""Extinction coefficient of photosynthetically active radiation (PAR) (:math:`k`,
      -)"""
-    yld: list[float] = [0.6]
+    yld: tuple[float, ...] = (0.6,)
     r"""Yield factor (:math:`y`,  -)"""
-    zeta: list[float] = [0.17]
+    zeta: tuple[float, ...] = (0.17,)
     r"""Ratio of fine-root mass to foliage area (:math:`\zeta`, kg C m-2)"""
-    resp_r: list[float] = [0.913]
+    resp_r: tuple[float, ...] = (0.913,)
     r"""Fine-root specific respiration rate (:math:`r_r`, year-1)"""
-    resp_s: list[float] = [0.044]
+    resp_s: tuple[float, ...] = (0.044,)
     r"""Sapwood-specific respiration rate (:math:`r_s`,  year-1)"""
-    resp_f: list[float] = [0.1]
+    resp_f: tuple[float, ...] = (0.1,)
     r"""Foliage maintenance respiration fraction (:math:`r_f`,  -)"""
-    m: list[float] = [2]
+    m: tuple[float, ...] = (2,)
     r"""Crown shape parameter (:math:`m`, -)"""
-    n: list[float] = [5]
+    n: tuple[float, ...] = (5,)
     r"""Crown shape parameter (:math:`n`, -)"""
-    f_g: list[float] = [0.05]
+    f_g: tuple[float, ...] = (0.05,)
     r"""Crown gap fraction (:math:`f_g`, -)"""
 
     # This decorator order for computed fields is recommended by pydantic but mypy
@@ -146,23 +146,27 @@ class Flora(BaseModel):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def q_m(self) -> list[float]:
+    def q_m(self) -> tuple[float, ...]:
         """Scaling factor to derive maximum crown radius from crown area."""
 
-        # A bit odd here - the validator uses lists of values, but the functions use
+        # A bit odd here - the validator uses tuples of values, but the functions use
         # np.arrays. It makes more sense to keep those standalone functions as np inputs
         # so here we shimmy to np and back. The alternative is to use numpy-pydantic.
-        return calculate_crown_q_m(m=np.array(self.m), n=np.array(self.n)).tolist()
+        return tuple(
+            calculate_crown_q_m(m=np.array(self.m), n=np.array(self.n)).tolist()
+        )
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def z_max_prop(self) -> list[float]:
+    def z_max_prop(self) -> tuple[float, ...]:
         """Proportion of stem height at which maximum crown radius is found."""
 
         # See comment on q_m property.
-        return calculate_crown_z_max_proportion(
-            m=np.array(self.m), n=np.array(self.n)
-        ).tolist()
+        return tuple(
+            calculate_crown_z_max_proportion(
+                m=np.array(self.m), n=np.array(self.n)
+            ).tolist()
+        )
 
     @model_validator(mode="after")
     def model_validation(self, info: ValidationInfo) -> Self:
@@ -241,4 +245,4 @@ class Flora(BaseModel):
     def __repr__(self) -> str:
         # Overrides the default pydantic __repr__.
 
-        return f"Flora with {len(self.name)} PFTS: {','.join(self.name)}"
+        return f"Flora with {len(self.pft_name)} PFTS: {', '.join(self.pft_name)}"

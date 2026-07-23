@@ -8,16 +8,6 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
-language_info:
-  name: python
-  version: 3.12.3
-  mimetype: text/x-python
-  codemirror_mode:
-    name: ipython
-    version: 3
-  pygments_lexer: ipython3
-  nbconvert_exporter: python
-  file_extension: .py
 ---
 
 # The canopy model
@@ -118,12 +108,12 @@ individual stems, grouped into 3 cohorts with different stem sizes and crown sha
 ```{code-cell} ipython3
 # Create a flora
 flora = Flora(
-    name=["short", "tall"],
-    h_max=[15, 30],
-    m=[2, 2],
-    n=[4, 3],
-    f_g=[0, 0],
-    ca_ratio=[380, 500],
+    pft_name=("short", "tall"),
+    h_max=(15, 30),
+    m=(2, 2),
+    n=(4, 3),
+    f_g=(0, 0),
+    ca_ratio=(380, 500),
 )
 
 # Create an id generator.
@@ -388,12 +378,12 @@ and canopy gap fractions.
 ```{code-cell} ipython3
 # Define a flora with PFTs that have crown gap fractions
 gappy_flora = Flora(
-    name=["short", "tall"],
-    h_max=[15, 30],
-    m=[2, 2],
-    n=[4, 3],
-    f_g=[0.1, 0.1],
-    ca_ratio=[380, 500],
+    pft_name=("short", "tall"),
+    h_max=(15, 30),
+    m=(2, 2),
+    n=(4, 3),
+    f_g=(0.1, 0.1),
+    ca_ratio=(380, 500),
 )
 
 # Define a community with three cohorts of stems with gappy canopies
@@ -499,8 +489,4 @@ ax2.set_xlabel("Projected community area (m2)")
 ax2.legend(framealpha=1.0)
 
 plt.tight_layout()
-```
-
-```{code-cell} ipython3
-
 ```

@@ -9,16 +9,6 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
-language_info:
-  name: python
-  version: 3.14.3
-  mimetype: text/x-python
-  codemirror_mode:
-    name: ipython
-    version: 3
-  pygments_lexer: ipython3
-  nbconvert_exporter: python
-  file_extension: .py
 ---
 
 # The T Model module
@@ -62,7 +52,7 @@ and their stem allometry:
 
 ```{code-cell} ipython3
 # Create a flora with 3 PFTs with different maximum heights
-flora = Flora(name=["short", "medium", "tall"], h_max=[10, 20, 30])
+flora = Flora(pft_name=("short", "medium", "tall"), h_max=(10, 20, 30))
 
 # Create an id generator.
 cid_generator = cohort_id_generator(mode="str")
@@ -195,7 +185,9 @@ plot_details = [
 axes = axes.flatten()
 
 for ax, (var, ylab) in zip(axes, plot_details):
-    ax.plot(whole_crown_gpp_profile, getattr(allocation_profile, var), label=flora.name)
+    ax.plot(
+        whole_crown_gpp_profile, getattr(allocation_profile, var), label=flora.pft_name
+    )
     ax.set_xlabel("GPP (m)")
     ax.set_ylabel(ylab)
 
@@ -208,5 +200,5 @@ Again, with GPP profiles, the
 predictions into columns identified by pairings of cohort ID and DBH.
 
 ```{code-cell} ipython3
-allocation_profile.to_dataframe().head(6)[["cohort_ids", "whole_crown_gpp", "npp"]]
+allocation_profile.to_dataframe().head(6)[["cohort_id", "whole_crown_gpp", "npp"]]
 ```

@@ -9,16 +9,6 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
-language_info:
-  name: python
-  version: 3.14.3
-  mimetype: text/x-python
-  codemirror_mode:
-    name: ipython
-    version: 3
-  pygments_lexer: ipython3
-  nbconvert_exporter: python
-  file_extension: .py
 ---
 
 # Allometry in the T Model
@@ -55,7 +45,7 @@ To generate allometric predictions under the T Model, we need to define a set of
 
 ```{code-cell} ipython3
 # Create a flora with 3 PFTs with different maximum heights
-flora = Flora(name=["short", "medium", "tall"], h_max=[10, 20, 30])
+flora = Flora(pft_name=("short", "medium", "tall"), h_max=(10, 20, 30))
 
 # Create an id generator.
 cid_generator = cohort_id_generator(mode="str")
@@ -142,7 +132,7 @@ plot_details = [
 ]
 
 for ax, (var, ylab) in zip(axes.flatten(), plot_details):
-    ax.plot(dbh_profile, getattr(allometry_profiles, var), label=flora.name)
+    ax.plot(dbh_profile, getattr(allometry_profiles, var), label=flora.pft_name)
     ax.set_xlabel("Diameter at breast height (m)")
     ax.set_ylabel(ylab)
 
@@ -156,6 +146,6 @@ DBH.
 
 ```{code-cell} ipython3
 allometry_profiles.to_dataframe().head(6)[
-    ["cohort_ids", "dbh", "stem_height", "crown_area", "crown_fraction"]
+    ["cohort_id", "dbh", "stem_height", "crown_area", "crown_fraction"]
 ]
 ```

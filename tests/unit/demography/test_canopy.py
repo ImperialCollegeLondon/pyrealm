@@ -137,7 +137,7 @@ def test_Canopy__init__():
     from pyrealm.demography.flora import Flora
     from pyrealm.demography.tmodel import StemAllometry
 
-    flora = Flora(name=["broadleaf", "conifer"], h_max=[30, 20])
+    flora = Flora(pft_name=("broadleaf", "conifer"), h_max=(30, 20))
 
     cid_gen = cohort_id_generator()
     cohorts = create_cohorts(
@@ -242,10 +242,10 @@ def test_fit_perfect_plasticity_approximation():
 
     # Set up the inputs.
     flora = Flora(
-        name=["a", "b", "c"],
-        h_max=list(h_max),
-        a_hd=list(a_hd),
-        ca_ratio=list(ca_ratio),
+        pft_name=("a", "b", "c"),
+        h_max=tuple(h_max),
+        a_hd=tuple(a_hd),
+        ca_ratio=tuple(ca_ratio),
     )
 
     cid_gen = cohort_id_generator()

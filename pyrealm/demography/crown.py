@@ -245,7 +245,7 @@ class CrownProfile(ToDataFrameMixin):
         # TODO: Need to do some form of validation here to check allometry and cohorts
         #       are congruent and sensible - maybe calculate allometry internally.
         #       This is only intended to work with the specific cohort DBH, so could
-        #       just check cohort_ids align across the two inputs.
+        #       just check cohort_id aligns across the two inputs.
 
         self.relative_crown_radius: NDArray[np.floating]
         """A 2D array of the relative crown radius of each stem at given heights"""
@@ -269,7 +269,7 @@ class CrownProfile(ToDataFrameMixin):
             # Check the allometry is 1D and matches the cohorts
             if allometry._ndims > 1:
                 raise ValueError("Provided allometry calculated using `at_dbh`.")
-            if not np.all(np.equal(allometry.cohort_ids, cohorts.cohort_id.to_numpy())):
+            if not np.all(np.equal(allometry.cohort_id, cohorts.cohort_id.to_numpy())):
                 raise ValueError("Provided allometry does not match cohorts.")
 
         # Validate z and set height_is_valid
