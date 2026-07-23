@@ -20,6 +20,7 @@ def rtmodel_flora():
     # Map the PFT trait args from the R implementation to pyrealm
     pft_definitions = pft_definitions.rename(
         columns={
+            "name": "pft_name",
             "a": "a_hd",
             "cr": "ca_ratio",
             "Hm": "h_max",
@@ -100,7 +101,7 @@ def fixture_cohorts_and_allometry():
 
     # A simple community containing one sample stem, with an initial crown gap fraction
     # of zero.
-    flora = Flora(name=["test"], f_g=[0.0])
+    flora = Flora(pft_name=("test",), f_g=(0.0,))
     cid_gen = cohort_id_generator()
     cohorts = create_cohorts(
         pft_name=np.array(["test"] * 4),

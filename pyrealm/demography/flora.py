@@ -101,7 +101,7 @@ class Flora(BaseModel):
       this is the rate at which total stem biomass turns over through branch loss.
     """
 
-    name: tuple[str, ...] = ("default",)
+    pft_name: tuple[str, ...] = ("default",)
     r"""The name of the plant functional type."""
     a_hd: tuple[float, ...] = (116.0,)
     r"""Initial slope of height-diameter relationship (:math:`a`, -)"""

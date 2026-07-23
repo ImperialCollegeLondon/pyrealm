@@ -18,7 +18,7 @@ def flora_data(mode: str, length: int, unequal: bool):
         return {}
 
     args: dict[str, tuple] = dict(
-        name=("defaults",),
+        pft_name=("defaults",),
         a_hd=(116.0,),
         ca_ratio=(390.43,),
         h_max=(15.33,),
@@ -163,7 +163,7 @@ def test_Flora_from_csv(filename, strict, outcome):
 
     with outcome:
         flora = Flora.from_csv(datapath, strict=strict)
-        assert flora.name == ("test1", "test2")
+        assert flora.pft_name == ("test1", "test2")
 
 
 def test_Flora_to_dataframe():
@@ -175,7 +175,7 @@ def test_Flora_to_dataframe():
 
     df = flora.to_dataframe()
 
-    assert df["name"].equals(pd.Series(["test1", "test2"]))
+    assert df["pft_name"].equals(pd.Series(["test1", "test2"]))
     assert df["a_hd"].equals(pd.Series([116.0, 116.0]))
 
 

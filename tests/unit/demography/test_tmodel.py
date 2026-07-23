@@ -514,7 +514,7 @@ def test_StemAllometry_StemAllocation_GrowthIncrements(
     # Generate cohort
     cid_gen = cohort_id_generator()
     cohorts = create_cohorts(
-        pft_name=np.array(rtmodel_flora.name),
+        pft_name=np.array(rtmodel_flora.pft_name),
         n_individuals=np.array([1, 1, 1]),
         dbh_value=rtmodel_data["dbh"][dbh_idx],
         cid_generator=cid_gen,
@@ -653,7 +653,7 @@ def test_StemAllocation_GPP_inputs(
     ## Generate cohort data and calculate the allometry and allocation
     cid_gen = cohort_id_generator()
     cohorts = create_cohorts(
-        pft_name=np.array(rtmodel_flora.name),
+        pft_name=np.array(rtmodel_flora.pft_name),
         n_individuals=np.array([1, 1, 1]),
         dbh_value=np.array([0.5, 0.5, 0.5]),
         flora=rtmodel_flora,
