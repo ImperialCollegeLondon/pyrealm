@@ -29,10 +29,16 @@ import pytest
             id="valid_with_community",
         ),
         pytest.param(
-            {"pft_name": ["name"], "dbh_value": [1.0], "n_individuals": [12.2]},
-            pytest.raises(ValueError),
-            "The number of individuals must be positive integers",
-            id="non_integer_n_individuals",
+            {"pft_name": ["name"], "dbh_value": [1.0], "n_individuals": [0]},
+            does_not_raise(),
+            None,
+            id="valid with no individuals",
+        ),
+        pytest.param(
+            {"pft_name": [], "dbh_value": [], "n_individuals": []},
+            does_not_raise(),
+            None,
+            id="valid with empty lists",
         ),
         pytest.param(
             {"pft_name": ["name"], "dbh_value": [-1.0], "n_individuals": [12]},
@@ -41,10 +47,16 @@ import pytest
             id="negative_dbh",
         ),
         pytest.param(
-            {"pft_name": ["name"], "dbh_value": [1.0], "n_individuals": [0]},
+            {"pft_name": ["name"], "dbh_value": [1.0], "n_individuals": [12.2]},
             pytest.raises(ValueError),
-            "The number of individuals must be positive integers",
-            id="no_individuals",
+            "The number of individuals must be integers >= 0",
+            id="non_integer_n_individuals",
+        ),
+        pytest.param(
+            {"pft_name": ["name"], "dbh_value": [1.0], "n_individuals": [-50]},
+            pytest.raises(ValueError),
+            "The number of individuals must be integers >= 0",
+            id="negative individuals",
         ),
         pytest.param(
             {"pft_name": ["name"], "dbh_value": [1.0], "n_individuals": [12, 12]},

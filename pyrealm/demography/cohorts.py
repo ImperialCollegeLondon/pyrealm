@@ -107,10 +107,13 @@ def create_cohorts(
     if np.any(dbh_value <= 0):
         raise ValueError("DBH values must be strictly positive")
 
-    if (not np.issubdtype(n_individuals.dtype, np.integer)) or np.any(
-        n_individuals <= 0
+    # For n_individuals, specifically allow empty arrays of any type but otherwise
+    # integers >= 0.
+    if n_individuals.size and (
+        (not np.issubdtype(n_individuals.dtype, np.integer))
+        or np.any(n_individuals < 0)
     ):
-        raise ValueError("The number of individuals must be positive integers")
+        raise ValueError("The number of individuals must be integers >= 0.")
 
     columns = {
         "pft_name": pft_name,
