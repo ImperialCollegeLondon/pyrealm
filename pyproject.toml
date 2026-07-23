@@ -3,7 +3,7 @@
 description = "Python tools for modelling plant productivity and demography."
 license = "MIT"
 name = "pyrealm"
-version = "3.0.0-rc.1"
+version = "3.0.0-rc.2"
 
 dependencies = [
   "dacite (>1.6)",
