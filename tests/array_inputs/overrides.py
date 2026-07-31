@@ -39,7 +39,7 @@ SKIP_METHODS = [
     # OK - this is really problematic. Array auto-discovery gets hung up on the
     # internals of pydantic - not sure the greedy approach to what gets tested is
     # sustainable.
-    "Flora.__repr_args__",
+    "FloraValidator.__repr_args__",
     # Something about pandas methods on Cohort objects also triggers - these are
     # explicitly blocked in utils.get_method_list rather than handling each one here.
     "create_cohorts",
