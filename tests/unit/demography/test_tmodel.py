@@ -674,3 +674,43 @@ def test_StemAllocation_GPP_inputs(
         df = alloc.to_dataframe()
         assert df.shape == (df_rows, len(alloc._array_attrs))
         repr(alloc)
+
+
+def test_StemAllocation_zero_gpp(rtmodel_flora):
+    """Test the predictions of StemAllocation and GrowthIncrements with zero GPP.
+
+    This is specifically to check that the edge case of zero GPP - which is a possible
+    input under extreme conditions - leads to finite predictions. These lead to negative
+    NPP and hence negative growth increments but this checks that the values are real
+    and not NaN or infinite.
+    """
+
+    from pyrealm.demography.cohorts import cohort_id_generator, create_cohorts
+    from pyrealm.demography.tmodel import (
+        GrowthIncrements,
+        StemAllocation,
+        StemAllometry,
+    )
+
+    ## Generate cohort data and calculate the allometry and allocation
+    cid_gen = cohort_id_generator()
+    cohorts = create_cohorts(
+        pft_name=np.array(rtmodel_flora.pft_name),
+        n_individuals=np.array([1, 1, 1]),
+        dbh_value=np.array([0.5, 0.5, 0.5]),
+        flora=rtmodel_flora,
+        cid_generator=cid_gen,
+    )
+    allom = StemAllometry(cohorts=cohorts)
+
+    alloc = StemAllocation(
+        cohorts=cohorts, allometry=allom, whole_crown_gpp=np.zeros(3)
+    )
+
+    for fld in (a for a in alloc._array_attrs if not a == "cohort_id"):
+        assert np.all(np.isfinite(getattr(alloc, fld)))
+
+    growth = GrowthIncrements(cohorts=cohorts, allometry=allom, stem_allocation=alloc)
+
+    for fld in (a for a in growth._array_attrs if not a == "cohort_id"):
+        assert np.all(np.isfinite(getattr(growth, fld)))
