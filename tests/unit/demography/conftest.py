@@ -48,7 +48,7 @@ def rtmodel_flora():
     pft_definitions["p_foliage_for_reproductive_tissue"] = 0
     pft_definitions["gpp_topslice"] = 0
 
-    return create_flora(**pft_definitions.to_dict(orient="list"))
+    return create_flora(pft_definitions.to_dict(orient="list"))
 
 
 @pytest.fixture
