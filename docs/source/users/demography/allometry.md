@@ -30,7 +30,7 @@ import numpy as np
 import pandas as pd
 
 from pyrealm.core.experimental import ExperimentalFeatureWarning
-from pyrealm.demography.flora import Flora
+from pyrealm.demography.flora import create_flora
 from pyrealm.demography.cohorts import create_cohorts, cohort_id_generator
 from pyrealm.demography.tmodel import StemAllometry
 
@@ -45,7 +45,7 @@ To generate allometric predictions under the T Model, we need to define a set of
 
 ```{code-cell} ipython3
 # Create a flora with 3 PFTs with different maximum heights
-flora = Flora(pft_name=("short", "medium", "tall"), h_max=(10, 20, 30))
+flora = create_flora(dict(pft_name=("short", "medium", "tall"), h_max=(10, 20, 30)))
 
 # Create an id generator.
 cid_generator = cohort_id_generator(mode="str")

@@ -39,7 +39,7 @@ from matplotlib.patches import Polygon
 import numpy as np
 import pandas as pd
 
-from pyrealm.demography.flora import Flora
+from pyrealm.demography.flora import create_flora
 from pyrealm.demography.cohorts import create_cohorts, cohort_id_generator
 from pyrealm.demography.crown import CrownProfile
 from pyrealm.demography.canopy import Canopy
@@ -107,13 +107,15 @@ individual stems, grouped into 3 cohorts with different stem sizes and crown sha
 
 ```{code-cell} ipython3
 # Create a flora
-flora = Flora(
-    pft_name=("short", "tall"),
-    h_max=(15, 30),
-    m=(2, 2),
-    n=(4, 3),
-    f_g=(0, 0),
-    ca_ratio=(380, 500),
+flora = create_flora(
+    dict(
+        pft_name=("short", "tall"),
+        h_max=(15, 30),
+        m=(2, 2),
+        n=(4, 3),
+        f_g=(0, 0),
+        ca_ratio=(380, 500),
+    )
 )
 
 # Create an id generator.
@@ -377,13 +379,15 @@ and canopy gap fractions.
 
 ```{code-cell} ipython3
 # Define a flora with PFTs that have crown gap fractions
-gappy_flora = Flora(
-    pft_name=("short", "tall"),
-    h_max=(15, 30),
-    m=(2, 2),
-    n=(4, 3),
-    f_g=(0.1, 0.1),
-    ca_ratio=(380, 500),
+gappy_flora = create_flora(
+    dict(
+        pft_name=("short", "tall"),
+        h_max=(15, 30),
+        m=(2, 2),
+        n=(4, 3),
+        f_g=(0.1, 0.1),
+        ca_ratio=(380, 500),
+    )
 )
 
 # Define a community with three cohorts of stems with gappy canopies

@@ -1,8 +1,11 @@
-"""The flora module implements:
+"""The flora module provides:
 
-* The Flora class. This is pydantic data model that provides a set of plant functional
-  types (PFT), defined as a set of functional traits for each PFT. The class defines a
-  specific set of traits used for demographic modelling in pyrealm, mostly the
+* The :class:`Flora` class. This is simply an alias for the :class:`pandas.DataFrame`
+  class, used to indicate a dataframe with a guaranteed set of fields.
+
+* The FloraValidator class. This is pydantic data model that provides a set of plant
+  functional types (PFT), defined as a set of functional traits for each PFT. The class
+  defines a specific set of traits used for demographic modelling in pyrealm, mostly the
   parameterisation of the T Model, but also some additional parameters for modelling
   crown shape.
 
@@ -11,10 +14,16 @@
   filled in using the default values, unless the model context specifies 'strict'
   validation when the user must provide all fields.
 
-  The class provides `from_csv` to generate an instance from trait data stored in a CSV
-  file.
-
 * Two functions to calculate computed traits (``q_m`` and ``z_max_prop``).
+
+In practice, instances of the ``Flora`` class should be created using either:
+
+* :meth:`create_flora` or
+* :meth:`load_flora_from_csv`.
+
+These functions are wrappers around the ``FloraValidator`` class that check the input
+data pass validation and provides the ``strict`` option to require the input data
+provides all required fields, rather than filling them from defaults.
 """  # noqa: D415
 
 
