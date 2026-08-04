@@ -78,9 +78,6 @@ def create_cohorts(
             communities.
     """
 
-    # Define attributes
-    flora_df = flora.to_dataframe()
-
     # Validate the inputs - originally did this with pydantic, but support for numpy
     # and bypassing validation when using pydantic to load just ended up tying the
     # code in knots.
@@ -126,7 +123,7 @@ def create_cohorts(
     # convert to pandas
     cohorts_df = Cohorts(columns)
 
-    cohorts = cohorts_df.merge(flora_df, on="pft_name")
+    cohorts = cohorts_df.merge(flora, on="pft_name")
     cohorts.insert(0, "cohort_id", [next(cid_generator) for idx in range(shape[0])])
 
     return cohorts

@@ -134,10 +134,10 @@ def test_Canopy__init__():
 
     from pyrealm.demography.canopy import Canopy
     from pyrealm.demography.cohorts import cohort_id_generator, create_cohorts
-    from pyrealm.demography.flora import Flora
+    from pyrealm.demography.flora import create_flora
     from pyrealm.demography.tmodel import StemAllometry
 
-    flora = Flora(pft_name=("broadleaf", "conifer"), h_max=(30, 20))
+    flora = create_flora(dict(pft_name=("broadleaf", "conifer"), h_max=(30, 20)))
 
     cid_gen = cohort_id_generator()
     cohorts = create_cohorts(
@@ -226,7 +226,7 @@ def test_fit_perfect_plasticity_approximation():
 
     from pyrealm.demography.canopy import fit_perfect_plasticity_approximation
     from pyrealm.demography.cohorts import cohort_id_generator, create_cohorts
-    from pyrealm.demography.flora import Flora
+    from pyrealm.demography.flora import create_flora
     from pyrealm.demography.tmodel import StemAllometry, calculate_dbh_from_height
 
     # Calculate DBH from target stem heights
@@ -241,11 +241,13 @@ def test_fit_perfect_plasticity_approximation():
     ca_ratio = (4 * a_hd * area) / (np.pi * stem_height * dbh)
 
     # Set up the inputs.
-    flora = Flora(
-        pft_name=("a", "b", "c"),
-        h_max=tuple(h_max),
-        a_hd=tuple(a_hd),
-        ca_ratio=tuple(ca_ratio),
+    flora = create_flora(
+        dict(
+            pft_name=("a", "b", "c"),
+            h_max=tuple(h_max),
+            a_hd=tuple(a_hd),
+            ca_ratio=tuple(ca_ratio),
+        )
     )
 
     cid_gen = cohort_id_generator()

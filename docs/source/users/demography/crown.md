@@ -41,7 +41,7 @@ from pyrealm.core.experimental import ExperimentalFeatureWarning
 from pyrealm.demography.flora import (
     calculate_crown_q_m,
     calculate_crown_z_max_proportion,
-    Flora,
+    create_flora,
 )
 
 from pyrealm.demography.cohorts import create_cohorts, cohort_id_generator
@@ -227,12 +227,14 @@ a `Flora` object using the PFTs.
 
 ```{code-cell} ipython3
 # Generate a Flora instance using those PFTs
-flora = Flora(
-    pft_name=("narrow", "medium", "wide"),
-    h_max=(20, 20, 20),
-    m=(1.5, 1.5, 4),
-    n=(1.5, 4, 1.5),
-    ca_ratio=(20, 500, 2000),
+flora = create_flora(
+    dict(
+        pft_name=("narrow", "medium", "wide"),
+        h_max=(20, 20, 20),
+        m=(1.5, 1.5, 4),
+        n=(1.5, 4, 1.5),
+        ca_ratio=(20, 500, 2000),
+    )
 )
 flora
 ```
@@ -240,9 +242,7 @@ flora
 The key canopy variables from the flora are:
 
 ```{code-cell} ipython3
-flora.to_dataframe()[
-    ["pft_name", "h_max", "ca_ratio", "m", "n", "f_g", "q_m", "z_max_prop"]
-]
+flora[["pft_name", "h_max", "ca_ratio", "m", "n", "f_g", "q_m", "z_max_prop"]]
 ```
 
 The next section of code generates the `StemAllometry` to use for the profiles.
@@ -388,7 +388,7 @@ crown area from the T Model allometry.
 
 ```{code-cell} ipython3
 # Calculate the crown profile across those heights for each PFT
-z_max = flora.z_max_prop * stem_height
+z_max = flora["z_max_prop"].to_numpy() * stem_height
 profile_at_zmax = CrownProfile(cohorts=cohorts, allometry=allometry, z=z_max)
 
 print(np.diag(profile_at_zmax.crown_radius**2 * np.pi))
@@ -403,13 +403,15 @@ below generates new profiles for a new set of PFTs that have similar crown area 
 but different shapes and gap fractions.
 
 ```{code-cell} ipython3
-flora = Flora(
-    pft_name=("no_gaps", "few_gaps", "many_gaps"),
-    h_max=(20, 20, 20),
-    m=(1.5, 1.5, 4.0),
-    n=(1.5, 4.0, 1.5),
-    f_g=(0.0, 0.1, 0.3),
-    ca_ratio=(380, 400, 420),
+flora = create_flora(
+    dict(
+        pft_name=("no_gaps", "few_gaps", "many_gaps"),
+        h_max=(20, 20, 20),
+        m=(1.5, 1.5, 4.0),
+        n=(1.5, 4.0, 1.5),
+        f_g=(0.0, 0.1, 0.3),
+        ca_ratio=(380, 400, 420),
+    )
 )
 
 # Create an id generator.
@@ -486,7 +488,9 @@ for f_g in np.linspace(0, 1, num=11):
 
     # Create a flora with a single PFT with current f_g and then generate a
     # stem allometry and crown profile
-    flora = Flora(pft_name=("pft",), h_max=(20,), m=(2,), n=(2,), f_g=(f_g,))
+    flora = create_flora(
+        dict(pft_name=("pft",), h_max=(20,), m=(2,), n=(2,), f_g=(f_g,))
+    )
 
     # Create the cohorts
     cohorts = create_cohorts(
@@ -582,8 +586,4 @@ _ = plt.legend(
     bbox_to_anchor=(0.5, 1.15),
     frameon=False,
 )
-```
-
-```{code-cell} ipython3
-
 ```

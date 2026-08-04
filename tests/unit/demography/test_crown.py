@@ -296,10 +296,10 @@ def test_calculate_relative_crown_radius_at_z_values_clipping(m, n):
     from pyrealm.demography.crown import (
         calculate_relative_crown_radius_at_z,
     )
-    from pyrealm.demography.flora import Flora
+    from pyrealm.demography.flora import create_flora
 
     # Default PFT settings
-    flora = Flora(name=["test"], m=[m], n=[n])
+    flora = create_flora(dict(name=["test"], m=[m], n=[n]))
     # Get the relative radius at that heights of the crown z_max values
     z_max_prop = flora.z_max_prop[0]
     q_z_values = calculate_relative_crown_radius_at_z(

@@ -33,7 +33,7 @@ import warnings
 import numpy as np
 
 from pyrealm.core.experimental import ExperimentalFeatureWarning
-from pyrealm.demography.flora import Flora
+from pyrealm.demography.flora import create_flora
 from pyrealm.demography.cohorts import create_cohorts, cohort_id_generator
 from pyrealm.demography.tmodel import StemAllometry
 from pyrealm.demography.canopy import Canopy, CohortCanopyData
@@ -491,14 +491,16 @@ canopy model](./canopy.md) calculations.
 
 ```{code-cell} ipython3
 # Define a flora with PFTs that have crown gap fractions
-gappy_flora = Flora(
-    pft_name=("short", "tall"),
-    h_max=(15, 30),
-    m=(1.5, 1.5),
-    n=(3, 1.5),
-    par_ext=(0.5, 0.6),
-    f_g=(0.1, 0.1),
-    ca_ratio=(380, 500),
+gappy_flora = create_flora(
+    dict(
+        pft_name=("short", "tall"),
+        h_max=(15, 30),
+        m=(1.5, 1.5),
+        n=(3, 1.5),
+        par_ext=(0.5, 0.6),
+        f_g=(0.1, 0.1),
+        ca_ratio=(380, 500),
+    )
 )
 
 cid_generator = cohort_id_generator(mode="str")

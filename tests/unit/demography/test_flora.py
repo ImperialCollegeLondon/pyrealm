@@ -104,35 +104,64 @@ def flora_data(mode: str, length: int, unequal: bool):
         ),
     ),
 )
-def test_Flora(flora_data, mode, length, unequal, strict, outcome, msg):
-    """Test the validation for Flora.
+class TestFloraValidation:
+    """Test validation directly and through create_flora."""
 
-    Checks the strict and lax modes work as expected with empty, partial and full inputs
-    and checks the unequal length validation works.
-    """
+    def test_FloraValidator(
+        self, flora_data, mode, length, unequal, strict, outcome, msg
+    ):
+        """Test the FloraValidator.
 
-    from pyrealm.demography.flora import Flora
+        Checks the strict and lax modes work as expected with empty, partial and full
+        inputs and checks the unequal length validation works.
+        """
 
-    # Would like to use spy here to validate that field validation failures exit before
-    # running custom model validation, but the line below always seems to return
-    # call_count = 0
-    # spy = mocker.spy(Flora, "strict_validation")
+        from pyrealm.demography.flora import FloraValidator
 
-    with outcome as err_handler:
-        v = Flora.model_validate(flora_data, context={"strict": strict})
+        # Would like to use spy here to validate that field validation failures exit
+        # before running custom model validation, but the line below always seems to
+        # return call_count = 0
+        # spy = mocker.spy(Flora, "strict_validation")
 
-        # Missing fields from partial and empty modes are present and the right length
-        assert v.tau_f == (4.0,) * length
-        assert v.tau_r == (1.04,) * length
+        with outcome as err_handler:
+            v = FloraValidator.model_validate(flora_data, context={"strict": strict})
 
-        # Computed fields are present
-        assert hasattr(v, "q_m")
-        assert hasattr(v, "z_max_prop")
+            # Missing fields from partial and empty modes are present and the right
+            # length
+            assert v.tau_f == (4.0,) * length
+            assert v.tau_r == (1.04,) * length
 
-        return
+            # Computed fields are present
+            assert hasattr(v, "q_m")
+            assert hasattr(v, "z_max_prop")
 
-    # Check errors raise the expected message
-    assert err_handler.match(msg)
+            return
+
+        # Check errors raise the expected message
+        assert err_handler.match(msg)
+
+    def test_create_flora(
+        self, flora_data, mode, length, unequal, strict, outcome, msg
+    ):
+        """Test the create_flora wrapper function using the same cases."""
+        from pyrealm.demography.flora import create_flora
+
+        with outcome as err_handler:
+            v = create_flora(flora_data, strict=strict)
+
+            # Missing fields from partial and empty modes are present and the right
+            # length
+            assert v["tau_f"].equals(pd.Series([4.0] * length))
+            assert v["tau_r"].equals(pd.Series([1.04] * length))
+
+            # Computed fields are present
+            assert "q_m" in v.columns
+            assert "z_max_prop" in v.columns
+
+            return
+
+        # Check errors raise the expected message
+        assert err_handler.match(msg)
 
 
 @pytest.mark.parametrize(
@@ -156,27 +185,15 @@ def test_Flora(flora_data, mode, length, unequal, strict, outcome, msg):
     ],
 )
 def test_Flora_from_csv(filename, strict, outcome):
-    """Test CSV loading."""
-    from pyrealm.demography.flora import Flora
+    """Test CSV loading, handling main error cases."""
+    from pyrealm.demography.flora import load_flora_from_csv
 
     datapath = resources.files("pyrealm_build_data.community") / filename
 
     with outcome:
-        flora = Flora.from_csv(datapath, strict=strict)
-        assert flora.pft_name == ("test1", "test2")
-
-
-def test_Flora_to_dataframe():
-    """Test conversion to dataframe."""
-    from pyrealm.demography.flora import Flora
-
-    datapath = resources.files("pyrealm_build_data.community") / "pfts.csv"
-    flora = Flora.from_csv(datapath)
-
-    df = flora.to_dataframe()
-
-    assert df["pft_name"].equals(pd.Series(["test1", "test2"]))
-    assert df["a_hd"].equals(pd.Series([116.0, 116.0]))
+        flora = load_flora_from_csv(datapath, strict=strict)
+        assert flora["pft_name"].equals(pd.Series(["test1", "test2"]))
+        assert flora["a_hd"].equals(pd.Series([116.0, 116.0]))
 
 
 @pytest.mark.parametrize(
@@ -185,32 +202,41 @@ def test_Flora_to_dataframe():
 )
 def test_Flora_extensibility(flora_data, mode, length, unequal):
     """Test the extensibility of the Flora model."""
-    from pyrealm.demography.flora import Flora
+    from pyrealm.demography.flora import FloraValidator, create_flora
 
     # A new subclass with additional variables
-    class FloraExtended(Flora):
+    class FloraValidatorExtended(FloraValidator):
         my_new_field: tuple[int, ...] = (42,)
 
-    # Strict mode still works
+    # Strict mode still works both with direct usage and when passing in to create_flora
     with pytest.raises(ValidationError):
-        flora = FloraExtended.model_validate(flora_data, context={"strict": True})
+        flora = FloraValidatorExtended.model_validate(
+            flora_data, context={"strict": True}
+        )
+
+    with pytest.raises(ValidationError):
+        flora = create_flora(flora_data, strict=True, validator=FloraValidatorExtended)
 
     # Create an instance to check defaults are filled in when not strict
-    flora = FloraExtended.model_validate(flora_data)
+    flora = FloraValidatorExtended.model_validate(flora_data)
 
     assert hasattr(flora, "my_new_field")
     assert getattr(flora, "my_new_field") == (42, 42)
 
+    flora = create_flora(flora_data, validator=FloraValidatorExtended)
+
+    assert "my_new_field" in flora.columns
+    assert flora["my_new_field"].equals(pd.Series([42, 42]))
+
     # Check it works when data provided
     flora_data["my_new_field"] = (1, 1)
 
-    flora = FloraExtended.model_validate(flora_data)
+    flora = FloraValidatorExtended.model_validate(flora_data)
 
     assert hasattr(flora, "my_new_field")
     assert getattr(flora, "my_new_field") == (1, 1)
 
-    # And that the field is present in the dataframe version.
-    flora_df = flora.to_dataframe()
+    flora = create_flora(flora_data, validator=FloraValidatorExtended)
 
-    assert "my_new_field" in flora_df
-    assert flora_df["my_new_field"].equals(pd.Series([1, 1]))
+    assert "my_new_field" in flora.columns
+    assert flora["my_new_field"].equals(pd.Series([1, 1]))
