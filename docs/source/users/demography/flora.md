@@ -38,7 +38,7 @@ This page introduces the main components of the {mod}`~pyrealm.demography` modul
 ```{code-cell} ipython3
 import numpy as np
 
-from pyrealm.demography.flora import Flora
+from pyrealm.demography.flora import create_flora, load_flora_from_csv
 from pyrealm.demography.cohorts import (
     create_cohorts,
     create_cohorts_from_csv,
@@ -106,37 +106,35 @@ the PlantFATE model {cite}`joshi:2022a`.
 
 +++
 
-## The Flora class
+## The Flora object and `create_flora`
 
-The {class}`~pyrealm.demography.flora.Flora` class is used to create a set of PFTs
-that will be used in a demographic simulation. It can be created directly by providing
-a tuple of values for each trait: you must provide the same length list of values for
-each trait but if you omit some traits then they will be automatically populated
-from default values.
+The {class}`~pyrealm.demography.flora.Flora` class is simply a {class}`pandas.DataFrame`
+containing a validated set of plant functional type data that can be used in a
+demographic simulation. However, `Flora` objects should be created using the
+`create_flora` function, which is used to validate inputs and optionally populate
+missing traits from default values.
 
 ```{code-cell} ipython3
-flora = Flora(pft_name=("short", "medium", "tall"), h_max=(10, 20, 30))
-flora
+flora = create_flora(dict(pft_name=("short", "medium", "tall"), h_max=(10, 20, 30)))
 ```
 
-You can use the  {meth}`~pyrealm.demography.core.ToDataFrameMixin.to_dataframe()` method
-of {class}`~pyrealm.demography.flora.Flora`  to export the trait data as a
-{class}`pandas.DataFrame`, making it easier to use for plotting or calculations outside
-of `pyrealm`.
+The resulting object is simply a dataframe, containing all of the required traits:
 
 ```{code-cell} ipython3
-flora.to_dataframe().transpose()
+flora.transpose()
 ```
 
 You can also create a `Flora` instance using PFT data stored in a [CSV
-file](./pfts.csv). Note that this CSV only provides some of the PFT traits, you can use
-`Flora.from_csv("pfts.csv", strict=True)` to require that the file provides all the
-traits.
+file](./pfts.csv).
 
 ```{code-cell} ipython3
-flora_from_csv = Flora.from_csv("pfts.csv")
-flora_from_csv
+flora_from_csv = load_flora_from_csv("pfts.csv")
+flora_from_csv.transpose()
 ```
+
+Note that this CSV only provides some of the PFT traits, you can use
+`load_flora_from_csv("pfts.csv", strict=True)` to require that the file provides all the
+traits.
 
 ## Plant Cohorts
 

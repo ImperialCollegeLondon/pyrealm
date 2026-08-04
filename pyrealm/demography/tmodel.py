@@ -880,6 +880,10 @@ class StemAllocation(ToDataFrameMixin):
        values but will calculate allocation values for all combinations of DBH, cohort
        and GPP.
 
+    GPP values cannot be negative but _can_ be zero, which might be expected under
+    winter conditions for example. The calculated NPP can also be negative where the GPP
+    is insufficient to cover respiration costs.
+
     Args:
         cohorts: An instance of :class:`~pyrealm.demography.cohorts.Cohorts`.
         allometry: An instance of :class:`~pyrealm.demography.tmodel.StemAllometry`.
@@ -950,8 +954,8 @@ class StemAllocation(ToDataFrameMixin):
         # Check we have an array of strictly positive values
         if not isinstance(whole_crown_gpp, np.ndarray):
             raise ValueError("The whole_crown_gpp value must be a numpy array.")
-        if np.any(whole_crown_gpp <= 0):
-            raise ValueError("Values in whole_crown_gpp must be greater than zero.")
+        if np.any(whole_crown_gpp < 0):
+            raise ValueError("Values in whole_crown_gpp cannot be negative.")
 
         if self.profile:
             # In profiling mode, a prediction is made at each GPP for each allometry
@@ -1084,10 +1088,14 @@ class GrowthIncrements(ToDataFrameMixin):
     NPP to allocate carbon to other pools such as VOC emissions, soil exudates and
     non-structural carbohydrates.
 
+    Note that growth increments can be negative if the biomass production is itself
+    negative, for example because GPP was insufficient to cover respiration costs, or
+    because the values are insufficient to cover turnover costs.
+
     Args:
         cohorts: A set of cohorts
         allometry: The current stem allometry for those cohorts
-        gpp_allocation: An allocation of whole crown GPP for those cohorts.
+        stem_allocation: An StemAllocation object providing NPP and turnover costs.
         biomass_production: An optional array of biomass production values, used to
             override the NPP estimate in ``gpp_allocation``.
     """

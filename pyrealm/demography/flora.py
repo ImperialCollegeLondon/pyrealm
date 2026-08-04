@@ -1,8 +1,11 @@
-"""The flora module implements:
+"""The flora module provides:
 
-* The Flora class. This is pydantic data model that provides a set of plant functional
-  types (PFT), defined as a set of functional traits for each PFT. The class defines a
-  specific set of traits used for demographic modelling in pyrealm, mostly the
+* The :class:`Flora` class. This is simply an alias for the :class:`pandas.DataFrame`
+  class, used to indicate a dataframe with a guaranteed set of fields.
+
+* The FloraValidator class. This is pydantic data model that provides a set of plant
+  functional types (PFT), defined as a set of functional traits for each PFT. The class
+  defines a specific set of traits used for demographic modelling in pyrealm, mostly the
   parameterisation of the T Model, but also some additional parameters for modelling
   crown shape.
 
@@ -11,10 +14,16 @@
   filled in using the default values, unless the model context specifies 'strict'
   validation when the user must provide all fields.
 
-  The class provides `from_csv` to generate an instance from trait data stored in a CSV
-  file.
-
 * Two functions to calculate computed traits (``q_m`` and ``z_max_prop``).
+
+In practice, instances of the ``Flora`` class should be created using either:
+
+* :meth:`create_flora` or
+* :meth:`load_flora_from_csv`.
+
+These functions are wrappers around the ``FloraValidator`` class that check the input
+data pass validation and provides the ``strict`` option to require the input data
+provides all required fields, rather than filling them from defaults.
 """  # noqa: D415
 
 
@@ -77,7 +86,14 @@ def calculate_crown_z_max_proportion(
     return ((n - 1) / (m * n - 1)) ** (1 / n)
 
 
-class Flora(BaseModel):
+class Flora(pd.DataFrame):
+    """The Cohorts class.
+
+    The Flora class is simply an alias for a {class}`pandas.DataFrame`.
+    """
+
+
+class FloraValidator(BaseModel):
     """The Flora class.
 
     This dataclass implements the set of traits required to define a plant functional
@@ -203,46 +219,41 @@ class Flora(BaseModel):
 
         return self
 
-    @classmethod
-    def _from_file_data(cls, file_data: dict, strict: bool = False) -> Flora:
-        """Create a Flora object from a dictionary of data.
 
-        Args:
-            file_data: The payload from a data file defining plant functional types.
-            strict: Require that all traits are specified in the input data.
-        """
-        try:
-            flora = cls.model_validate(file_data, context={"strict": strict})
-        except ValidationError as excep:
-            raise excep
+def load_flora_from_csv(
+    path: Path, strict: bool = False, validator: type[FloraValidator] = FloraValidator
+) -> Flora:
+    """Create a Flora object from a CSV file.
 
-        return flora
+    Args:
+        path: A path to a CSV file of plant functional type definitions.
+        strict: Require that all traits are specified in the input file.
+        validator: A pydantic class used to validate the data.
+    """
 
-    @classmethod
-    def from_csv(cls, path: Path, strict: bool = False) -> Flora:
-        """Create a Flora object from a CSV file.
+    try:
+        data = pd.read_csv(path)
+    except (FileNotFoundError, pd.errors.ParserError) as excep:
+        raise excep
 
-        Args:
-            path: A path to a CSV file of plant functional type definitions.
-            strict: Require that all traits are specified in the input file.
-        """
+    return create_flora(data.to_dict(orient="list"), strict=strict, validator=validator)
 
-        try:
-            data = pd.read_csv(path)
-        except (FileNotFoundError, pd.errors.ParserError) as excep:
-            raise excep
 
-        return cls._from_file_data(data.to_dict(orient="list"), strict=strict)
+def create_flora(
+    data: dict,
+    strict: bool = False,
+    validator: type[FloraValidator] = FloraValidator,
+) -> Flora:
+    """Create a Flora object from a dictionary of data.
 
-    def to_dataframe(self) -> pd.DataFrame:
-        """Return the Flora data as a pandas DataFrame.
+    Args:
+        data: A dictionary providing plant functional trait data.
+        strict: Require that all traits are specified in the input data.
+        validator: A pydantic class used to validate the data.
+    """
+    try:
+        validated_data = validator.model_validate(data, context={"strict": strict})
+    except ValidationError as excep:
+        raise excep
 
-        This is primarily used to store the flora data within the Cohorts class and
-        allow it to be easily merged onto cohort data, which specifies the PFT name.
-        """
-        return pd.DataFrame(self.model_dump())
-
-    def __repr__(self) -> str:
-        # Overrides the default pydantic __repr__.
-
-        return f"Flora with {len(self.pft_name)} PFTS: {', '.join(self.pft_name)}"
+    return Flora(validated_data.model_dump())

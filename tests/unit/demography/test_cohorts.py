@@ -79,9 +79,9 @@ import pytest
 def test_create_cohorts(inputs, outcome, msg):
     """Test the Cohorts validation."""
     from pyrealm.demography.cohorts import cohort_id_generator, create_cohorts
-    from pyrealm.demography.flora import Flora
+    from pyrealm.demography.flora import create_flora
 
-    flora = Flora(pft_name=("name",))
+    flora = create_flora(dict(pft_name=("name",)))
     cid_gen = cohort_id_generator()
     inputs = {k: np.array(v) for k, v in inputs.items()}
 
@@ -120,11 +120,11 @@ def test_create_cohorts_from_csv(filename, outcome, expect_community):
         cohort_id_generator,
         create_cohorts_from_csv,
     )
-    from pyrealm.demography.flora import Flora
+    from pyrealm.demography.flora import create_flora
 
     datapath = resources.files("pyrealm_build_data.community") / filename
     cid_gen = cohort_id_generator()
-    flora = Flora(pft_name=("test1", "test2"))
+    flora = create_flora(dict(pft_name=("test1", "test2")))
 
     with outcome:
         cohort_data = create_cohorts_from_csv(
@@ -142,16 +142,16 @@ def test_Cohorts_with_Flora_extensibility():
         cohort_id_generator,
         create_cohorts_from_csv,
     )
-    from pyrealm.demography.flora import Flora
+    from pyrealm.demography.flora import FloraValidator, create_flora
 
     cid_gen = cohort_id_generator()
     datapath = resources.files("pyrealm_build_data.community") / "cohorts.csv"
 
     # A new subclass with additional variables
-    class FloraExtended(Flora):
+    class FloraExtended(FloraValidator):
         my_new_field: list[int] = [42]  # type: ignore[annotation-unchecked]  # noqa: RUF012
 
-    flora = FloraExtended(pft_name=("test1", "test2"))
+    flora = create_flora(dict(pft_name=("test1", "test2")), validator=FloraExtended)
 
     cohort_data = create_cohorts_from_csv(
         path=datapath, cid_generator=cid_gen, flora=flora

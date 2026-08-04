@@ -11,7 +11,7 @@ import pytest
 def rtmodel_flora():
     """Generates a flora object from the rtmodel test definitions."""
 
-    from pyrealm.demography.flora import Flora
+    from pyrealm.demography.flora import create_flora
 
     # Load the PFT definitions and rename to pyrealm attributes
     pfts_path = resources.files("pyrealm_build_data.t_model") / "pft_definitions.csv"
@@ -48,7 +48,7 @@ def rtmodel_flora():
     pft_definitions["p_foliage_for_reproductive_tissue"] = 0
     pft_definitions["gpp_topslice"] = 0
 
-    return Flora(**pft_definitions.to_dict(orient="list"))
+    return create_flora(pft_definitions.to_dict(orient="list"))
 
 
 @pytest.fixture
@@ -96,12 +96,12 @@ def fixture_cohorts_and_allometry():
     """A fixture providing a simple community."""
 
     from pyrealm.demography.cohorts import cohort_id_generator, create_cohorts
-    from pyrealm.demography.flora import Flora
+    from pyrealm.demography.flora import create_flora
     from pyrealm.demography.tmodel import StemAllometry
 
     # A simple community containing one sample stem, with an initial crown gap fraction
     # of zero.
-    flora = Flora(pft_name=("test",), f_g=(0.0,))
+    flora = create_flora(dict(pft_name=("test",), f_g=(0.0,)))
     cid_gen = cohort_id_generator()
     cohorts = create_cohorts(
         pft_name=np.array(["test"] * 4),
