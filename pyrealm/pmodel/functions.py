@@ -517,7 +517,7 @@ def calculate_soilmstress_mengoli(
     r"""Calculate the Mengoli et al. empirical soil moisture stress factor.
 
     This function calculates a penalty factor :math:`\beta(\theta)` for well-watered GPP
-    estimates as an empirically derived stress factor :cite:p:`mengoli:2023a`. The
+    estimates as an empirically derived stress factor :cite:p:`mengoli:2025a`. The
     factor is calculated from relative soil moisture as a fraction of field capacity
     (:math:`\theta`) and the long-run climatological aridity index for a site
     (:math:`\textrm{AI}`), calculated as (total PET)/(total precipitation) for a
@@ -552,7 +552,7 @@ def calculate_soilmstress_mengoli(
         
         There are minor differences in the implementation of the Subdaily P Model in
         ``pyrealm`` from that used to calibrate this function in
-        :cite:p:`mengoli:2023a`. To get the closest match when applying this
+        :cite:p:`mengoli:2025a`. To get the closest match when applying this
         soil moisture correction, use the following settings:
 
         .. code-block:: python
