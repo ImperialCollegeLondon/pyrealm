@@ -39,6 +39,7 @@ import pandas as pd
 from numpy.typing import NDArray
 from pydantic import (
     BaseModel,
+    ConfigDict,
     ValidationError,
     ValidationInfo,
     computed_field,
@@ -116,6 +117,8 @@ class FloraValidator(BaseModel):
       is never lost to turnover. There is no specific branch mass in the T model, so
       this is the rate at which total stem biomass turns over through branch loss.
     """
+
+    model_config = ConfigDict(use_attribute_docstrings=True)
 
     pft_name: tuple[str, ...] = ("default",)
     r"""The name of the plant functional type."""

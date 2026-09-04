@@ -80,7 +80,7 @@ effects of soil moisture stress:
 * The {func}`~pyrealm.pmodel.functions.calculate_soilmstress_stocker` function
 implements the {cite:t}`Stocker:2020dh` GPP penalty for use with the standard P Model.
 * {func}`~pyrealm.pmodel.functions.calculate_soilmstress_mengoli` function
-implements the {cite:t}`mengoli:2023a` GPP penalty for use with the subdaily P Model.
+implements the {cite:t}`mengoli:2025a` GPP penalty for use with the subdaily P Model.
 
 The GPP penalty functions are described in more detail below, using the artificial data
 set created below. The data set consists of 5 days of observations of a constant
@@ -294,7 +294,7 @@ plt.show()
 ## The {func}`~pyrealm.pmodel.functions.calculate_soilmstress_mengoli` penalty factor
 
 This is an empirically derived factor ($\beta(\theta) \in [0,1]$,
-{cite:p}`mengoli:2023a` that describes a penalty to gross primary productivity (GPP)
+{cite:p}`mengoli:2025a` that describes a penalty to gross primary productivity (GPP)
 resulting from soil moisture stress.
 
 The factor requires estimates of:

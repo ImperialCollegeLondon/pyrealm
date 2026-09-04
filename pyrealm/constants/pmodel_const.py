@@ -197,7 +197,7 @@ class PModelConst(ConstantsClass):
         default_factory=lambda: dict(psi_a=0.34, psi_b=-0.6, y_a=0.62, y_b=-0.45)
     )
     """Parameterisation of the soil moisture stress function of
-    :cite:t:`mengoli:2023a` as a dictionary providing values for the:
+    :cite:t:`mengoli:2025a` as a dictionary providing values for the:
 
     * coefficient of the maximal level function  (``y_a``),
     * exponent of the maximal level function  (``y_b``),
