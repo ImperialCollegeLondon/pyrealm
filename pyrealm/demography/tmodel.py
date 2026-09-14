@@ -561,27 +561,29 @@ def calculate_growth_increments(
     within ``pyrealm``.
 
     The stem diameter increment can be calculated using the available productivity for
-    growth and the rates of change in stem mass (:math:`\textrm{d}W_s / \textrm{d}t`)
-    and in the combined foliage and fine root masses (:math:`\textrm{d}W_fr /
-    \textrm{d}t`):  
+    growth and the rates of change in stem mass (:math:`\textrm{d}W_s / \textrm{d}D`)
+    and combined foliage and fine root masses (:math:`\textrm{d}W_{fr} /
+    \textrm{d}D`) per unit change in stem diameter:  
 
     .. math::
 
-        \Delta D = \frac{B - T}{ \textrm{d}W_s / \textrm{d}t  +
-             \textrm{d}W_fr / \textrm{d}t}
+        \Delta D = \frac{B - T}{ \textrm{d}W_s / \textrm{d}D  +
+             \textrm{d}W_{fr} / \textrm{d}D}
 
-    The rates of change in stem and foliar mass can be calculated as:
+    The derivatives of stem mass and combined foliar and fine root mass with respect 
+    to stem diameter can be calculated as:
 
     .. math::
       :nowrap:
 
       \[
         \begin{align*}
-            \textrm{d}W_s / \textrm{d}t &= \frac{\pi}{8} \rho_s D
-                \left(a D \left(1 - \frac{H}{H_{m}} + 2 H \right) \right) \\
+            \textrm{d}W_s / \textrm{d}D &= \frac{\pi}{8} \rho_s D
+                \left(a D \left(1 - \frac{H}{H_{m}} \right) + 2 H \right) \\
 
-            \textrm{d}W_fr / \textrm{d}t &= L \frac{\pi c}{4 a} \left(a D \left( 1 -
-                \frac{H}{H_{m}} + H \right) \right) \frac{1}{\sigma + \zeta}
+            \textrm{d}W_{fr} / \textrm{d}D &= L \frac{\pi c}{4 a} \left(a D \left( 1 -
+                \frac{H}{H_{m}} \right) + H \right)
+                \left(\frac{1}{\sigma} + \zeta \right)
         \end{align*}
       \]
 
@@ -590,16 +592,16 @@ def calculate_growth_increments(
 
     * the specific leaf area (:math:`\sigma`),
     * the leaf area index (:math:`L`),
-    * the wood  density of the PFT (:math:`\rho_s`),
+    * the wood density of the PFT (:math:`\rho_s`),
     * the maximum height (:math:`H_{m}`),
     * the initial slope of the height/diameter relationship (:math:`a`),
     * the crown area ratio (:math:`c`), and
     * the ratio of fine root mass to leaf area (:math:`\zeta`).
 
     The value of :math:`\Delta D` is unstable when :math:`D = 0` and hence :math:`H = 0`
-    and the rates of change in stem and foliar mass are also zero. If :math:`P_{net} - T
+    and the rates of change in stem and foliar mass are also zero. If :math:`B - T
     = 0` then :math:`\Delta D` is undefined, otherwise :math:`\Delta D = \pm \inf`
-    depending on whether then turnover costs exceed the available NPP. Under these
+    depending on whether the turnover costs exceed the available NPP. Under these
     conditions, this function explicitly sets :math:`\Delta D = 0`: **stems with zero
     height cannot grow**.
 
@@ -611,15 +613,15 @@ def calculate_growth_increments(
 
       \[
         \begin{align*}
-        \Delta W_s &=  \textrm{d}W_s / \textrm{d}t \, \Delta D\\
-        \Delta W_fr &=  \textrm{d}W_fr / \textrm{d}t \, \Delta D
+        \Delta W_s &=  \textrm{d}W_s / \textrm{d}D \, \Delta D\\
+        \Delta W_{fr} &=  \textrm{d}W_{fr} / \textrm{d}D \, \Delta D
         \end{align*}
       \]
 
     Note that :cite:`Li:2014bc` use ':math:`W_f`' to denote the increment in both
     foliage and fine root mass, as fine root mass is estimated as a function of foliage
-    area through the specific leaf area (:math:`\sigma`) and  ratio of fine root mass to
-    leaf area (:math:`\zeta`). Here we use :math:`W_fr` to indicate the combined
+    area through the specific leaf area (:math:`\sigma`) and ratio of fine root mass to
+    leaf area (:math:`\zeta`). Here we use :math:`W_{fr}` to indicate the combined
     increments and partition the final increments into foliage and fine root components
     as:
 
@@ -629,8 +631,8 @@ def calculate_growth_increments(
       \[
         \begin{align*}
 
-        \Delta W_f &= \Delta W_fr /( 1 + \sigma \zeta)
-        \Delta W_r &= \Delta W_fr - \Delta W_f
+        \Delta W_f &= \Delta W_{fr} /( 1 + \sigma \zeta) \\
+        \Delta W_r &= \Delta W_{fr} - \Delta W_f
         \end{align*}
       \]
 
@@ -650,7 +652,7 @@ def calculate_growth_increments(
     """
 
     # Rates of change in stem and foliage + fine root mass
-    dWsdt = (
+    dWsdD = (
         np.pi
         / 8
         * rho_s
@@ -660,8 +662,8 @@ def calculate_growth_increments(
 
     # This equation includes terms for the rate of change in fine root mass, which is
     # estimated alongside rate of change in foliage mass in the model as
-    # (1 + sigma + zeta) dWfdt (Eqn 15)
-    dWfrdt = (
+    # (1 + sigma + zeta) dWfdD (Eqn 15)
+    dWfrdD = (
         lai
         * ((np.pi * ca_ratio) / (4 * a_hd))
         * (a_hd * dbh * (1 - stem_height / h_max) + stem_height)
@@ -675,16 +677,16 @@ def calculate_growth_increments(
         delta_d = np.where(
             dbh == 0,
             0,
-            (biomass_production - turnover) / (dWsdt + dWfrdt),
+            (biomass_production - turnover) / (dWsdD + dWfrdD),
         )
 
     # Partition delta Wfr into delta Wf and delta Wr using (1 + sigma.zeta)
     fine_root_foliage_factor = 1 + sla * zeta
-    delta_Wfr = dWfrdt * delta_d
+    delta_Wfr = dWfrdD * delta_d
     delta_Wf = delta_Wfr / fine_root_foliage_factor
     delta_Wr = delta_Wfr - delta_Wf
 
-    return (delta_d, dWsdt * delta_d, delta_Wf, delta_Wr)
+    return (delta_d, dWsdD * delta_d, delta_Wf, delta_Wr)
 
 
 class StemAllometry(ToDataFrameMixin):
