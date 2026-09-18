@@ -206,7 +206,6 @@ class CohortCanopyData(ToDataFrameMixin):
 
     _array_attrs: ClassVar[tuple[str, ...]] = (
         "stem_leaf_area",
-        "cohort_absorption",
         "fapar",
     )
 
