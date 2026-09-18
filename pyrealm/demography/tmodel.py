@@ -25,19 +25,19 @@ def calculate_heights(
 ) -> NDArray[np.floating]:
     r"""Calculate tree height under the T Model.
 
-    The height of trees (:math:`H`) are calculated from individual diameters at breast
-    height (:math:`D`), along with the maximum height (:math:`H_{m}`) and initial slope
-    of the height/diameter relationship (:math:`a`) of the plant functional types
-    :cite:p:`{Equation 4, }Li:2014bc`:
+    The height of trees (:math:`H`, [m]) are calculated from individual diameters at
+    breast height (:math:`D`, [m]), along with the maximum height (:math:`H_{m}`,
+    [m]) and initial slope of the height/diameter relationship (:math:`a`, [-]) of the
+    plant functional types :cite:p:`{Equation 4, }Li:2014bc`:
 
     .. math::
 
          H = H_{m}  \left(1 - \exp(-a \cdot D / H_{m})\right)
 
     Args:
-        h_max: Maximum height of the PFT
-        a_hd: Initial slope of the height/diameter relationship of the PFT
-        dbh: Diameter at breast height of individuals
+        h_max: Maximum height of the PFT [m]
+        a_hd: Initial slope of the height/diameter relationship of the PFT [-]
+        dbh: Diameter at breast height of individuals [m]
     """
 
     return h_max * (1 - np.exp(-a_hd * dbh / h_max))
@@ -50,12 +50,12 @@ def calculate_dbh_from_height(
 ) -> NDArray[np.floating]:
     r"""Calculate diameter at breast height from stem height under the T Model.
 
-    This function inverts the normal calculation of stem height (:math:`H`) from
-    diameter at breast height (DBH, :math:`D`) in the T Model (see
+    This function inverts the normal calculation of stem height (:math:`H`, [m]) from
+    diameter at breast height (DBH, :math:`D`, [m]) in the T Model (see
     :meth:`~pyrealm.demography.tmodel.calculate_heights`). This is a helper
     function to allow users to convert known stem heights for a plant functional type,
-    with maximum height (:math:`H_{m}`) and initial slope of the height/diameter
-    relationship (:math:`a`) into the expected DBH values.
+    with maximum height (:math:`H_{m}`, [m]) and initial slope of the height/diameter
+    relationship (:math:`a`, [-]) into the expected DBH values.
 
     .. math::
 
@@ -70,9 +70,9 @@ def calculate_dbh_from_height(
         lead to unrealistically large predictions of DBH.
 
     Args:
-        h_max: Maximum height of the PFT
-        a_hd: Initial slope of the height/diameter relationship of the PFT
-        stem_height: Stem height of individuals
+        h_max: Maximum height of the PFT [m]
+        a_hd: Initial slope of the height/diameter relationship of the PFT [-]
+        stem_height: Stem height of individuals [-]
         validate: Boolean flag to suppress argument validation
     """
 
@@ -95,10 +95,11 @@ def calculate_crown_areas(
 ) -> NDArray[np.floating]:
     r"""Calculate tree crown area under the T Model.
 
-    The tree crown area (:math:`A_{c}`) is calculated from individual diameters at
-    breast height (:math:`D`) and stem height (:math:`H`), along with the crown area
-    ratio (:math:`c`) and the initial slope of the height/diameter relationship
-    (:math:`a`) of the plant functional type :cite:p:`{Equation 8, }Li:2014bc`:
+    The tree crown area (:math:`A_{c}`, [m2]) is calculated from individual diameters at
+    breast height (:math:`D`, [m]) and stem height (:math:`H`, [m]), along with the
+    crown area ratio (:math:`c`, [-]) and the initial slope of the height/diameter
+    relationship (:math:`a`, [-]) of the plant functional type :cite:p:`{Equation 8,
+    }Li:2014bc`:
 
     .. math::
 
@@ -106,10 +107,10 @@ def calculate_crown_areas(
 
 
     Args:
-        ca_ratio: Crown area ratio of the PFT
-        a_hd: Initial slope of the height/diameter relationship of the PFT
-        dbh: Diameter at breast height of individuals
-        stem_height: Stem height of individuals
+        ca_ratio: Crown area ratio of the PFT [-]
+        a_hd: Initial slope of the height/diameter relationship of the PFT [-]
+        dbh: Diameter at breast height of individuals [m]
+        stem_height: Stem height of individuals [m]
     """
 
     return ((np.pi * ca_ratio) / (4 * a_hd)) * dbh * stem_height
@@ -122,19 +123,19 @@ def calculate_crown_fractions(
 ) -> NDArray[np.floating]:
     r"""Calculate tree crown fraction under the T Model.
 
-    The crown fraction (:math:`f_{c}`) is calculated from individual diameters at breast
-    height (:math:`D` for :math:`D > 0`) and stem height (:math:`H`), along with the
-    initial slope of the height / diameter relationship (:math:`a`) of the plant
-    functional type :cite:p:`{Equation 11, }Li:2014bc`:
+    The crown fraction (:math:`f_{c}`, [-]) is calculated from individual diameters at
+    breast height (:math:`D` for :math:`D > 0`, [m]) and stem height (:math:`H`, [m]),
+    along with the initial slope of the height / diameter relationship (:math:`a`, [-])
+    of the plant functional type :cite:p:`{Equation 11, }Li:2014bc`:
 
     .. math::
 
         f_{c} =\frac{H}{a D}
 
     Args:
-        a_hd: Initial slope of the height/diameter relationship of the PFT
-        stem_height: Stem height of individuals
-        dbh: Diameter at breast height of individuals
+        a_hd: Initial slope of the height/diameter relationship of the PFT [-]
+        stem_height: Stem height of individuals [m]
+        dbh: Diameter at breast height of individuals [m]
     """
 
     # Calculate crown fraction
@@ -148,18 +149,19 @@ def calculate_stem_masses(
 ) -> NDArray[np.floating]:
     r"""Calculate stem mass under the T Model.
 
-    The stem mass (:math:`W_{s}`) is calculated from individual diameters at breast
-    height (:math:`D`) and stem height (:math:`H`), along with the wood density
-    (:math:`\rho_s`) of the plant functional type :cite:p:`{Equation 6, }Li:2014bc`:
+    The stem carbon mass (:math:`W_{s}`, [kg{C}]) is calculated from individual
+    diameters at breast height (:math:`D`, [m]) and stem height (:math:`H`, [m]), along
+    with the wood density (:math:`\rho_s`, [kg{C} m-3]) of the plant functional type
+    :cite:p:`{Equation 6, }Li:2014bc`:
 
     .. math::
 
         W_s = (\pi / 8) \rho_s D^2 H
 
     Args:
-        rho_s: Wood density of the PFT
-        stem_height: Stem height of individuals
-        dbh: Diameter at breast height of individuals
+        rho_s: Wood density of the PFT [kg{C} m-3]
+        stem_height: Stem height of individuals [m]
+        dbh: Diameter at breast height of individuals [m]
     """
 
     return (np.pi / 8) * rho_s * (dbh**2) * stem_height
@@ -172,18 +174,19 @@ def calculate_foliage_masses(
 ) -> NDArray[np.floating]:
     r"""Calculate foliage mass under the T Model.
 
-    The foliage mass (:math:`W_{f}`) is calculated from the crown area (:math:`A_{c}`),
-    along with the specific leaf area (:math:`\sigma`) and leaf area index (:math:`L`)
-    of the plant functional type :cite:p:`Li:2014bc`.
+    The foliage carbon mass (:math:`W_{f}`, [kg{C}]) is calculated from the crown area
+    (:math:`A_{c}`, [m2]), along with the specific leaf area (:math:`\sigma`, [m2
+    kg{C}-1]) and leaf area index (:math:`L`, [-]) of the plant functional type
+    :cite:p:`Li:2014bc`.
 
     .. math::
 
         W_f = (1 / \sigma) A_c L
 
     Args:
-        sla: Specific leaf area of the PFT
-        lai: Leaf area index of the PFT
-        crown_area: Crown area of individuals
+        sla: Specific leaf area of the PFT [m2 kg{C}-1]
+        lai: Leaf area index of the PFT [-]
+        crown_area: Crown area of individuals [m2]
     """
 
     return crown_area * lai * (1 / sla)
@@ -196,18 +199,19 @@ def calculate_fine_root_masses(
 ) -> NDArray[np.floating]:
     r"""Calculate foliage mass under the T Model.
 
-    The fine root mass (:math:`W_{r}`) is calculated from the total area of foliage -
-    the product of the crown area (:math:`A_{c}`) and leaf area index (:math:`L`) - and
-    the ratio of fine root mass to leaf area (:math:`zeta`).
+    The fine root carbon mass (:math:`W_{r}`) is calculated from the total area of
+    foliage - the product of the crown area (:math:`A_{c}`, [m2]) and leaf area index
+    (:math:`L`, [-]) - and the ratio of fine root mass to leaf area (:math:`zeta`,
+    [kg{C} m-2]).
 
     .. math::
 
         W_r = A_c L \zeta
 
     Args:
-        lai: Leaf area index of the PFT
-        crown_area: Crown area of individuals
-        zeta: The ratio of fine root mass to foliage area of the PFT.
+        lai: Leaf area index of the PFT [-]
+        crown_area: Crown area of individuals [m2]
+        zeta: The ratio of fine root mass to foliage area of the PFT [kg{C} m-2]
     """
 
     return crown_area * lai * zeta
@@ -222,22 +226,23 @@ def calculate_sapwood_masses(
 ) -> NDArray[np.floating]:
     r"""Calculate sapwood mass under the T Model.
 
-    The sapwood mass (:math:`W_{\cdot s}`) is calculated from the individual crown area
-    (:math:`A_{c}`), stem height (:math:`H`) and canopy fraction (:math:`f_{c}`) along
-    with the wood density (:math:`\rho_s`) and crown area ratio (:math:`c`) of the plant
-    functional type, following Equation 14 of :cite:`Li:2014bc`. The function is
-    undefined for negative or zero heights.
+    The sapwood carbon mass (:math:`W_{\cdot s}`, [kg{C}]) is calculated from the
+    individual crown area (:math:`A_{c}`, [m2]), stem height (:math:`H`, [m]) and canopy
+    fraction (:math:`f_{c}`, [-]) along with the wood density (:math:`\rho_s`, [kg{C}
+    m-3) and crown area ratio (:math:`c`, [-]) of the plant functional type, following
+    Equation 14 of :cite:`Li:2014bc`. The function is undefined for negative or zero
+    heights.
 
     .. math::
 
         W_{\cdot s} = \frac{A_c \rho_s H (1 - f_c / 2)}{c}
 
     Args:
-        rho_s: Wood density of the PFT
-        ca_ratio: Crown area ratio of the PFT
-        stem_height: Stem height of individuals
-        crown_area: Crown area of individuals
-        crown_fraction: Crown fraction of individuals
+        rho_s: Wood density of the PFT [kg{C} m-3]
+        ca_ratio: Crown area ratio of the PFT [-]
+        stem_height: Stem height of individuals [m]
+        crown_area: Crown area of individuals [m2]
+        crown_fraction: Crown fraction of individuals [-]
     """
 
     return crown_area * rho_s * stem_height * (1 - crown_fraction / 2) / ca_ratio
@@ -249,13 +254,13 @@ def calculate_crown_z_max(
 ) -> NDArray[np.floating]:
     r"""Calculate height of maximum crown radius.
 
-    The height of the maximum crown radius (:math:`z_m`) is derived from the crown
+    The height of the maximum crown radius (:math:`z_m`, [m]) is derived from the crown
     shape parameters (:math:`m,n`) and the resulting fixed proportion (:math:`p_{zm}`)
     for plant functional types. These shape parameters are defined as part of the
     extension of the T Model presented by :cite:t:`joshi:2022a`.
 
     The value :math:`z_m` is the height above ground where the largest crown radius is
-    found, given the proportion and the estimated stem height (:math:`H`) of
+    found, given the proportion and the estimated stem height (:math:`H`, [m]) of
     individuals.
 
     .. math::
@@ -263,8 +268,8 @@ def calculate_crown_z_max(
         z_m = p_{zm} H
 
     Args:
-        z_max_prop: Crown shape parameter of the PFT
-        stem_height: Stem height of individuals
+        z_max_prop: Crown shape parameter of the PFT [-]
+        stem_height: Stem height of individuals [m]
     """
 
     return stem_height * z_max_prop
@@ -276,9 +281,9 @@ def calculate_crown_r0(
 ) -> NDArray[np.floating]:
     r"""Calculate scaling factor for width of maximum crown radius.
 
-    This scaling factor (:math:`r_0`) is derived from the crown shape parameters
+    This scaling factor (:math:`r_0`, [-]) is derived from the crown shape parameters
     (:math:`m,n,q_m`) for plant functional types and the estimated crown area
-    (:math:`A_c`) of individuals. The shape parameters are defined as part of the
+    (:math:`A_c`, [m2]) of individuals. The shape parameters are defined as part of the
     extension of the T Model presented by :cite:t:`joshi:2022a` and :math:`r_0` is used
     to scale the crown area such that the crown area at the  maximum crown radius fits
     the expectations of the T Model.
@@ -288,8 +293,8 @@ def calculate_crown_r0(
         r_0 = 1/q_m  \sqrt{A_c / \pi}
 
     Args:
-        q_m: Crown shape parameter of the PFT
-        crown_area: Crown area of individuals
+        q_m: Crown shape parameter of the PFT [-]
+        crown_area: Crown area of individuals [m2]
     """
 
     # Scaling factor to give expected A_c (crown area) at
@@ -305,21 +310,21 @@ def calculate_whole_crown_gpp(
 ) -> NDArray[np.floating]:
     r"""Calculate whole crown gross primary productivity.
 
-    This function calculates individual gross primary productivity (GPP) across the
-    whole crown, given the individual potential GPP per metre squared (:math:`P_0`, kg C
-    m-2) and crown area (:math:`A_c`, m2), along with the leaf area index (:math:`L`)
-    and the extinction coefficient (:math:`k`) of the plant functional type
-    :cite:p:`{Equation 12, }Li:2014bc`.
+    This function calculates individual gross primary productivity (GPP, [kg{C}]) across
+    the whole crown, given the individual potential GPP per metre squared (:math:`P_0`,
+    [kg{C} m-2]) and crown area (:math:`A_c`, [m2]), along with the leaf area index
+    (:math:`L`, [-]) and the extinction coefficient (:math:`k`, [-]) of the plant
+    functional type :cite:p:`{Equation 12, }Li:2014bc`.
 
     .. math::
 
         P = P_0 A_c (1 - e^{-kL})
 
     Args:
-        lai: The leaf area index
-        par_ext: The extinction coefficient
-        potential_gpp: Potential GPP per metre squared
-        crown_area: The crown area in metres squared
+        lai: The leaf area index [-]
+        par_ext: The extinction coefficient [-]
+        potential_gpp: Potential GPP per metre squared [kg{C} m-2]
+        crown_area: The crown area in metres squared [m2]
     """
 
     return potential_gpp * crown_area * (1 - np.exp(-(par_ext * lai)))
@@ -331,16 +336,17 @@ def calculate_sapwood_respiration(
 ) -> NDArray[np.floating]:
     r"""Calculate sapwood respiration.
 
-    Calculates the total sapwood respiration (:math:`R_{\cdot s}`) given the individual
-    sapwood mass (:math:`W_{\cdot s}`) and the sapwood respiration rate of the plant
-    functional type (:math:`r_{s}`) :cite:p:`{see Equation 13, }Li:2014bc`.
+    Calculates the total annual sapwood respiration (:math:`R_{\cdot s}`, [kg{C}
+    year-1]) given the individual sapwood mass (:math:`W_{\cdot s}`, [kg{C}]) and the
+    sapwood respiration rate of the plant functional type (:math:`r_{s}`, [year-1])
+    :cite:p:`{see Equation 13, }Li:2014bc`.
 
     .. math::
          R_{\cdot s} = W_{\cdot s} \, r_s
 
     Args:
-        resp_s: The sapwood respiration rate
-        sapwood_mass: The individual sapwood mass
+        resp_s: The sapwood respiration rate [year-1]
+        sapwood_mass: The individual sapwood mass [kg{C}]
     """
 
     return sapwood_mass * resp_s
@@ -352,18 +358,19 @@ def calculate_foliage_respiration(
 ) -> NDArray[np.floating]:
     r"""Calculate foliar respiration.
 
-    Calculates the total foliar respiration (:math:`R_{f}`) given the individual crown
-    GPP (:math:`P`) and the foliar respiration rate of the plant functional type
-    (:math:`r_{f}`). :cite:t:`Li:2014bc` remove foliar respiration as a constant
-    proportion of potential GPP before calculating GPP for the crown, but ``pyrealm``
-    treats this proportion as part of the definition of plant functional types.
+    Calculates the annual total foliar respiration (:math:`R_{f}`, [kg{C} year-1]) given
+    the individual crown GPP (:math:`P`, [kg{C}]) and the foliar respiration rate of the
+    plant functional type (:math:`r_{f}`, [year-1]). :cite:t:`Li:2014bc` remove foliar
+    respiration as a constant proportion of potential GPP before calculating GPP for the
+    crown, but ``pyrealm`` treats this proportion as part of the definition of plant
+    functional types.
 
     .. math::
          R_{f} = P \, r_f
 
     Args:
-        resp_f: The foliar respiration rate
-        whole_crown_gpp: The individual whole crown GPP.
+        resp_f: The foliar respiration rate [kg{C}]
+        whole_crown_gpp: The individual whole crown GPP [kg{C}]
     """
 
     return whole_crown_gpp * resp_f
@@ -375,8 +382,9 @@ def calculate_fine_root_respiration(
 ) -> NDArray[np.floating]:
     r"""Calculate fine root respiration.
 
-    Calculates the total fine root respiration (:math:`R_{r}`) given fine root mass
-    (:math:`W_r`) the fine root respiration rate (:math:`r_r`):
+    Calculates the total fine root respiration (:math:`R_{r}`, [kg{C} year-1]) given
+    fine root mass (:math:`W_r`, [kg{C}]) the fine root respiration rate (:math:`r_r`,
+    [year-1]):
 
     .. math::
          R_{r} = W_r r_r
@@ -392,8 +400,8 @@ def calculate_fine_root_respiration(
     :math:`W_r = \zeta A_c L` (see :func:`calculate_fine_root_masses`).
 
     Args:
-        fine_root_mass: The individual fine root mass.
-        resp_r: The respiration rate of fine roots of the PFT.
+        fine_root_mass: The individual fine root mass [kg{C}]
+        resp_r: The respiration rate of fine roots of the PFT [year-1]
     """
 
     return fine_root_mass * resp_r
@@ -408,11 +416,11 @@ def calculate_net_primary_productivity(
 ) -> NDArray[np.floating]:
     r"""Calculate net primary productivity.
 
-    The net primary productivity (NPP, :math:`P_{net}`) is calculated as a plant
-    functional type specific yield proportion (:math:`y`) of the total GPP (:math:`P`)
-    for the individual minus respiration (:math:`R_m`), as the sum of the respiration
-    costs for foliage  (:math:`R_f`), fine roots  (:math:`R_r`) and sapwood
-    (:math:`R_s`).
+    The net primary productivity (NPP, :math:`P_{net}`, [kg{C}]) is calculated as a
+    plant functional type specific yield proportion (:math:`y`, [-]) of the total GPP
+    (:math:`P`, [kg{C}]) for the individual minus respiration (:math:`R_m`, [kg{C}]), as
+    the sum of the respiration costs for foliage  (:math:`R_f`), fine roots
+    (:math:`R_r`) and sapwood (:math:`R_s`).
 
     .. math::
         P_{net} = y (P - R_m) = y (P - W_{\cdot s} r_s - \zeta \sigma W_f r_r - W_f r_f)
@@ -424,11 +432,11 @@ def calculate_net_primary_productivity(
     functional types.
 
     Args:
-        yld: The yield proportion.
-        whole_crown_gpp: The total GPP for the crown.
-        foliage_respiration: The total foliar respiration.
-        fine_root_respiration: The total fine root respiration
-        sapwood_respiration: The total sapwood respiration.
+        yld: The yield proportion [-]
+        whole_crown_gpp: The total GPP for the crown [kg{C}]
+        foliage_respiration: The total foliar respiration [kg{C} year-1]
+        fine_root_respiration: The total fine root respiration [kg{C} year-1]
+        sapwood_respiration: The total sapwood respiration [kg{C} year-1]
     """
 
     return yld * (
@@ -445,18 +453,18 @@ def calculate_foliage_turnover(
 ) -> NDArray[np.floating]:
     r"""Calculate foliage turnover.
 
-    This function calculates the carbon mass of foliage turnover. This is calculated
-    from the total foliage mass of individuals (:math:`W_f`), and the turnover times of
-    foliage (:math:`\tau_f`) of the plant functional type :cite:p:`{see Equation 15,
-    }Li:2014bc`.
+    This function calculates the carbon mass of annual foliage turnover [kg{C} year-1].
+    This is calculated from the total foliage mass of individuals (:math:`W_f`,
+    [kg{C}]), and the turnover times of foliage (:math:`\tau_f`, [year]) of the plant
+    functional type :cite:p:`{see Equation 15, }Li:2014bc`.
 
     .. math::
 
         T = W_f \left( \frac{1}{\tau_f} \right)
 
     Args:
-        tau_f: The turnover time of foliage
-        foliage_mass: The foliage mass
+        tau_f: The turnover time of foliage [year]
+        foliage_mass: The foliage mass [kg{C}]
     """
 
     return foliage_mass / tau_f
@@ -468,10 +476,10 @@ def calculate_branch_turnover(
 ) -> NDArray[np.floating]:
     r"""Calculate stem turnover.
 
-    This function calculates the carbon mass of branch turnover, representing branch
-    fall and other woody tissue losses. This is calculated from the total stem mass of
-    individuals (:math:`W_s`), and the stem turnover rate (:math:`\tau_b`) for the
-    plant functional type.
+    This function calculates the carbon mass of branch turnover [kg{C} year-1],
+    representing branch fall and other woody tissue losses. This is calculated from the
+    total stem mass of individuals (:math:`W_s`, [kg{C}]), and the branch turnover time
+    (:math:`\tau_b`, [year]) for the plant functional type.
 
     .. math::
 
@@ -484,8 +492,8 @@ def calculate_branch_turnover(
         of the original model, which do not include branch turnover.
 
     Args:
-        tau_b: The branch turnover rate
-        stem_mass: The stem mass
+        tau_b: The branch turnover rate [year]
+        stem_mass: The stem mass [kg{C}]
     """
 
     # This handles the default infinite turnover value because X / Inf = 0 for all X.
@@ -498,9 +506,10 @@ def calculate_fine_root_turnover(
 ) -> NDArray[np.floating]:
     r"""Calculate turnover costs.
 
-    This function calculates the costs associated with the turnover of fine roots. This
-    is calculated from the total fine root mass of individuals (:math:`W_r`) and the
-    turnover time of fine roots (:math:`\tau_r`) of the plant functional type.
+    This function calculates the annual carbon mass of fine root turnover [kg{C}
+    year-1]. This is calculated from the total fine root mass of individuals
+    (:math:`W_r`, [kg{C}]) and the turnover time of fine roots (:math:`\tau_r`, [year])
+    of the plant functional type.
 
     .. math::
 
@@ -517,8 +526,8 @@ def calculate_fine_root_turnover(
 
 
     Args:
-        tau_r: The turnover time of fine roots
-        fine_root_mass: The fine root mass
+        tau_r: The turnover time of fine roots [year]
+        fine_root_mass: The fine root mass [kg{C}]
     """
 
     return fine_root_mass / tau_r
@@ -549,10 +558,10 @@ def calculate_growth_increments(
     turnover costs (:math:`T`) and carbon available for allocation to biomass increments
     in:
     
-    * the stem diameter (:math:`\Delta D`),
-    * the stem mass (:math:`\Delta W_s`), 
-    * the foliar mass (:math:`\Delta W_f`), and
-    * the fine root mass (:math:`\Delta W_r`).
+    * the stem diameter (:math:`\Delta D`, [m]),
+    * the stem mass (:math:`\Delta W_s`, [kg{C}]), 
+    * the foliar mass (:math:`\Delta W_f`, [kg{C}]), and
+    * the fine root mass (:math:`\Delta W_r`, [kg{C}]).
 
     The T Model does not include the allocation of NPP to carbon costs outside of growth
     and turnover, and so uses NPP directly as biomass production. Predicted NPP could be
@@ -587,16 +596,16 @@ def calculate_growth_increments(
         \end{align*}
       \]
 
-    given the current stem diameter (:math:`D`) and height (:math:`H`) and the following
-    plant functional type traits:
+    given the current stem diameter (:math:`D`, [m]) and height (:math:`H`, [m]) and the
+    following plant functional type traits:
 
-    * the specific leaf area (:math:`\sigma`),
-    * the leaf area index (:math:`L`),
-    * the wood density of the PFT (:math:`\rho_s`),
-    * the maximum height (:math:`H_{m}`),
-    * the initial slope of the height/diameter relationship (:math:`a`),
-    * the crown area ratio (:math:`c`), and
-    * the ratio of fine root mass to leaf area (:math:`\zeta`).
+    * the specific leaf area (:math:`\sigma`, [m2 kg{C}-1]),
+    * the leaf area index (:math:`L`, [-]),
+    * the wood density of the PFT (:math:`\rho_s`, [kg{C} m-3]),
+    * the maximum height (:math:`H_{m}`, [m]),
+    * the initial slope of the height/diameter relationship (:math:`a`, [-]),
+    * the crown area ratio (:math:`c`, [-]), and
+    * the ratio of fine root mass to leaf area (:math:`\zeta`, [kg{C} m-2]).
 
     The value of :math:`\Delta D` is unstable when :math:`D = 0` and hence :math:`H = 0`
     and the rates of change in stem and foliar mass are also zero. If :math:`B - T
@@ -638,17 +647,17 @@ def calculate_growth_increments(
 
 
     Args:
-        rho_s: Wood density of the PFT
-        a_hd: Initial slope of the height/diameter relationship of the PFT
-        h_max: Maximum height of the PFT
-        lai: Leaf area index of the PFT
-        ca_ratio: Crown area ratio of the PFT
-        sla: Specific leaf area of the PFT
-        zeta: The ratio of fine root mass to foliage area of the PFT
-        biomass_production: The biomass production of individuals
-        turnover: Fine root and foliage turnover cost of individuals
-        dbh: Diameter at breast height of individuals
-        stem_height: Stem height of individuals
+        rho_s: Wood density of the PFT [kg{C} m-3]
+        a_hd: Initial slope of the height/diameter relationship of the PFT [-]
+        h_max: Maximum height of the PFT [m]
+        lai: Leaf area index of the PFT [-]
+        ca_ratio: Crown area ratio of the PFT [-]
+        sla: Specific leaf area of the PFT [m2 kg{C}-1]
+        zeta: The ratio of fine root mass to foliage area of the PFT [kg{C} m-2]
+        biomass_production: The biomass production of individuals [kg{C}]
+        turnover: Fine root and foliage turnover cost of individuals [kg{C}]
+        dbh: Diameter at breast height of individuals [m]
+        stem_height: Stem height of individuals [m]
     """
 
     # Rates of change in stem and foliage + fine root mass
@@ -703,9 +712,9 @@ class StemAllometry(ToDataFrameMixin):
 
     Alternatively, the class can be used to generate a stem allometry profile for the
     cohort PFTs at a range of DBH values. The ``at_dbh`` argument is used to provide 1D
-    array of DBH values and the class will then generate a prediction for each cohort
-    PFT at each stem diameter. The class prediction attributes are then 2D arrays with
-    shape `(n_at_dbh, n_cohorts)`.
+    array of DBH values in metres and the class will then generate a prediction for each
+    cohort PFT at each stem diameter. The class prediction attributes are then 2D arrays
+    with shape `(n_at_dbh, n_cohorts)`.
 
     The ``to_dataframe`` method can be used to export the predictions as a
     data frame, flattening 2D predictions if ``at_dbh`` is used.
@@ -713,7 +722,7 @@ class StemAllometry(ToDataFrameMixin):
     Args:
         cohorts: An instance of :class:`~pyrealm.demography.cohorts.Cohorts`.
         at_dbh: An optional array of DBH values used to provide a profile of allometry
-            predictions.
+            predictions [m].
     """
 
     _array_attrs: ClassVar[tuple[str, ...]] = (
@@ -750,25 +759,25 @@ class StemAllometry(ToDataFrameMixin):
         self.cohort_id: NDArray[np.generic]
         """An array of the cohort ID for each prediction."""
         self.dbh: NDArray[np.floating]
-        """The diameter at breast height (m)"""
+        """The stem diameter at breast height [m]"""
         self.stem_height: NDArray[np.floating]
-        """Stem height (m)"""
+        """The stem height [m]"""
         self.crown_area: NDArray[np.floating]
-        """Crown area (m2)"""
+        """The crown area [m2]"""
         self.crown_fraction: NDArray[np.floating]
         """Vertical fraction of the stem covered by the crown (-)"""
         self.stem_mass: NDArray[np.floating]
-        """Stem mass (kg)"""
+        """Stem carbon mass [kg{C}]"""
         self.foliage_mass: NDArray[np.floating]
-        """Foliage mass (kg)"""
+        """Foliage carbon mass [kg{C}]"""
         self.fine_root_mass: NDArray[np.floating]
-        """Fine root mass (kg)"""
+        """Fine root carbon mass [kg{C}]"""
         self.sapwood_mass: NDArray[np.floating]
-        """Sapwood mass (kg)"""
+        """Sapwood carbon mass [kg{C}]"""
         self.crown_r0: NDArray[np.floating]
-        """Crown radius scaling factor (-)"""
+        """Crown radius scaling factor [-]"""
         self.crown_z_max: NDArray[np.floating]
-        """Height of maximum crown radius (m)"""
+        """Height of maximum crown radius [-]]"""
 
         # Populate DBH values for calculating allometry. The CohortData code already
         # enforces positive DBH, so only need to check at_dbh.
@@ -865,8 +874,8 @@ class StemAllocation(ToDataFrameMixin):
     """Calculate GPP allocation for stems.
 
     This method calculates the predicted GPP allocations of potential gross primary
-    productivity (GPP) for stems under the T Model :cite:`Li:2014bc`, given a set of
-    cohorts and stem allometry predictions for those cohorts.
+    productivity (GPP, [kg{C}]) for stems under the T Model :cite:`Li:2014bc`, given a
+    set of cohorts and stem allometry predictions for those cohorts.
 
     Allocation from GPP estimates are handled in two ways:
 
@@ -890,7 +899,7 @@ class StemAllocation(ToDataFrameMixin):
         cohorts: An instance of :class:`~pyrealm.demography.cohorts.Cohorts`.
         allometry: An instance of :class:`~pyrealm.demography.tmodel.StemAllometry`.
         whole_crown_gpp: An array of GPP values available to a stem at which to model
-            allocation (kg C).
+            allocation [kg{C}].
         profile: A boolean switch used to calculate profiles of allocation values for
             cohorts at different GPP values.
 
@@ -933,22 +942,23 @@ class StemAllocation(ToDataFrameMixin):
         """An integer giving the dimensionality of the predictions."""
 
         self.whole_crown_gpp: NDArray[np.floating]
-        """An array of gross primary productivity values (kg C) across the whole of the
-        crown of each stem to be allocated to respiration, turnover and growth."""
+        """An array of gross primary productivity values across the whole of the
+        crown of each stem to be allocated to respiration, turnover and growth
+        [kg{C}]."""
         self.sapwood_respiration: NDArray[np.floating]
-        """Allocation to sapwood respiration (g C)"""
+        """Carbon allocation to sapwood respiration [kg{C}])"""
         self.foliage_respiration: NDArray[np.floating]
-        """Allocation to foliar respiration (g C)"""
+        """Carbon allocation to foliage respiration [kg{C}]"""
         self.fine_root_respiration: NDArray[np.floating]
-        """Allocation to fine root respiration (g C)"""
+        """Carbon allocation to fine root respiration [kg{C}]"""
         self.foliage_turnover: NDArray[np.floating]
-        """Allocation to leaf turnover (g C)"""
+        """Carbon allocation to leaf turnover [kg{C}]"""
         self.fine_root_turnover: NDArray[np.floating]
-        """Allocation to fine root turnover"""
+        """Carbon allocation to fine root turnover [kg{C}]"""
         self.branch_turnover: NDArray[np.floating]
-        """Allocation to branch turnover"""
+        """Carbon allocation to branch turnover [kg{C}]"""
         self.npp: NDArray[np.floating]
-        """Net primary productivity (g C)"""
+        """Net primary productivity [kg{C}]"""
 
         # Validate GPP input and handle array broadcasting
         self.profile = profile
@@ -1099,7 +1109,7 @@ class GrowthIncrements(ToDataFrameMixin):
         allometry: The current stem allometry for those cohorts
         stem_allocation: An StemAllocation object providing NPP and turnover costs.
         biomass_production: An optional array of biomass production values, used to
-            override the NPP estimate in ``gpp_allocation``.
+            override the NPP estimate in ``gpp_allocation`` [kg{C}].
     """
 
     _array_attrs: ClassVar[tuple[str, ...]] = (
@@ -1127,15 +1137,15 @@ class GrowthIncrements(ToDataFrameMixin):
         """An integer giving the dimensionality of the predictions."""
 
         self.biomass_production: NDArray[np.floating]
-        """The carbon available for biomass production (g C)"""
+        """The carbon available for biomass production [kg{C}]"""
         self.delta_dbh: NDArray[np.floating]
-        """Predicted increase in stem diameter from growth allocation (m)"""
+        """Predicted increase in stem diameter from growth allocation [m]"""
         self.delta_stem_mass: NDArray[np.floating]
-        """Predicted increase in stem mass from growth allocation (g C)"""
+        """Predicted increase in stem mass from growth allocation [kg{C}]"""
         self.delta_foliage_mass: NDArray[np.floating]
-        """Predicted increase in foliar mass from growth allocation (g C)"""
+        """Predicted increase in foliar mass from growth allocation [kg{C}]"""
         self.delta_fine_root_mass: NDArray[np.floating]
-        """Predicted increase in fine root mass from growth allocation (g C)"""
+        """Predicted increase in fine root mass from growth allocation [kg{C}]"""
 
         # Set the biomass production values to be used
         if biomass_production is None:
