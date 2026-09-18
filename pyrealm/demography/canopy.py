@@ -41,25 +41,26 @@ def solve_canopy_area_filling_height(
     of individuals in each cohort.
 
     The return value is the difference between the calculated :math:`A_p(z)` and a
-    user-specified target area, This allows the function to be used with a root solver
-    to find :math:`z` values that result in a given :math:`A_p(z)`. The default target
-    area is zero, so the default return value will be the actual total :math:`A_p(z)`
-    for the community.
+    user-specified target area (:math:`A`, [m2]), This allows the function to be used
+    with a root solver to find :math:`z` values that result in a given :math:`A_p(z)`.
+    The default target area is zero, so the default return value will be the actual
+    total :math:`A_p(z)` for the community.
 
     A typical use case for the target area would be to specify the area at which a given
     canopy layer closes under the perfect plasticity approximation in order to find the
     closure height.
 
     Args:
-        z: Vertical height on the z axis.
-        n_individuals: Number of individuals in each cohort
-        crown_area: Crown area of each cohort
-        stem_height: Stem height of each cohort
-        m: Crown shape parameter ``m``` for each cohort
-        n: Crown shape parameter ``n``` for each cohort
-        q_m: Crown shape parameter ``q_m``` for each cohort
-        z_max: Crown shape parameter ``z_m``` for each cohort
-        target_area: A target projected crown area.
+        z: Vertical height  (:math:`z`, [m]).
+        n_individuals: Number of individuals in each cohort [-]
+        crown_area: Crown area of individuals in each cohort [m2]
+        stem_height: Stem height of individuals in each cohort [m]
+        m: Crown shape parameter for each cohort (:math:`m`, [-])
+        n: Crown shape parameter for each cohort (:math:`n`, [-])
+        q_m: Crown shape parameter for each cohort (:math:`q_m`, [-])
+        z_max: Height of maximum crown area () for individual for each cohort
+            (:math:`z_m`, [-])
+        target_area: A target projected crown area for the community [m2].
     """
     # Convert z to array for validation and typing
     z_arr = np.array(z)
@@ -110,12 +111,12 @@ def fit_perfect_plasticity_approximation(
     Args:
         cohorts: A set of cohorts.
         allometry: The stem allometry for those cohorts.
-        area: The area available for canopy to fill.
-        canopy_gap_fraction: The canopy gap fraction
+        area: The area available for canopy to fill (:math:`A`, [m2])
+        canopy_gap_fraction: The canopy gap fraction (:math:`f_G`, [-])
         max_stem_height: The maximum stem height in the canopy, used as an upper bound
-            on finding the closure height of the topmost layer.
+            on finding the closure height of the topmost layer [m].
         solver_tolerance: The absolute tolerance used with the root solver to find the
-            layer heights.
+            layer heights [m].
     """
 
     # Calculate the number of layers to contain the total community crown area
@@ -195,16 +196,17 @@ class CohortCanopyData(ToDataFrameMixin):
             set of cohorts (columns) at a set of required heights (rows), as for example
             calculated using the :class:`~pyrealm.demography.crown.CrownProfile` class.
         n_individuals: A one-dimensional array of the number of individuals in each
-            cohort.
+            cohort [-].
         lai: A one-dimensional array giving the leaf area index trait for the plant
-            functional type of each cohort.
+            functional type of each cohort [-].
         par_ext: A one-dimensional array giving the light extinction coefficient for
-            the plant functional type of each cohort.
-        cell_area: A float setting the total canopy area available to the cohorts.
+            the plant functional type of each cohort [-].
+        cell_area: A float setting the total canopy area available to the cohorts [m2].
     """
 
     _array_attrs: ClassVar[tuple[str, ...]] = (
         "stem_leaf_area",
+        "cohort_absorption",
         "fapar",
     )
 
@@ -225,11 +227,11 @@ class CohortCanopyData(ToDataFrameMixin):
 
     # Computed variables
     stem_leaf_area: NDArray[np.floating] = field(init=False)
-    """The leaf area of the crown model for each cohort by layer."""
+    """The total leaf area in each canopy layer for each cohort [m2]"""
     cohort_absorption: NDArray[np.floating] = field(init=False)
-    """The Beer-Lambert absorption fraction for each cohort."""
+    """The Beer-Lambert absorption fraction for each cohort [-]"""
     fapar: NDArray[np.floating] = field(init=False)
-    """The across layer fractions of absorbed radiation for each cohort by layer."""
+    """The across layer fractions of absorbed radiation for each cohort by layer [-]"""
 
     # Community wide attributes in their own class
     community_data: CommunityCanopyData = field(init=False)
@@ -295,10 +297,11 @@ class CommunityCanopyData(ToDataFrameMixin):
     ground below the canopy is stored as the `transmission_to_ground` attribute.
 
     Args:
-        absorption: The expected light absorption for cohorts within each layer.
-        leaf_area_index: The leaf area index of cohorts within layers.
-        cohort_leaf_area: The total leaf area of each cohort in each layer.
-        cell_area: The area of the cell containing the community.
+        absorption: The expected light absorption fraction for cohorts within each layer
+            [-].
+        leaf_area_index: The leaf area index of cohorts within layers [-].
+        cohort_leaf_area: The total leaf area of each cohort in each layer [m2].
+        cell_area: The area of the cell containing the community [m2].
     """
 
     _array_attrs: ClassVar[tuple[str, ...]] = (
@@ -312,25 +315,25 @@ class CommunityCanopyData(ToDataFrameMixin):
 
     # Init vars
     absorption: InitVar[NDArray[np.floating]]
-    """The Beer Lambert light absorption fraction for each cohort."""
+    """The Beer Lambert light absorption fraction for each cohort [-]."""
     leaf_area_index: InitVar[NDArray[np.floating]]
-    """The leaf area index for each cohort."""
+    """The leaf area index for each cohort [-]."""
     cohort_leaf_area: InitVar[NDArray[np.floating]]
-    """The total leaf area per cohort for each layer."""
+    """The total leaf area per cohort for each layer [m2]."""
     cell_area: InitVar[float]
-    """The total area within the community."""
+    """The total area within the community. [m2]"""
 
     # Calculated variables
     average_layer_absorption: NDArray[np.floating] = field(init=False)
-    """The average absorption within layers across the community."""
+    """The average fraction of light absorbed within layers across the community [-]."""
     average_layer_fapar: NDArray[np.floating] = field(init=False)
-    """The average fAPAR of the community for each layer."""
+    """The average fAPAR of the community for each layer [-]."""
     average_layer_lai: NDArray[np.floating] = field(init=False)
-    """The average leaf area index of the community within layers."""
+    """The average leaf area index of the community within layers [-]."""
     transmission_profile: NDArray[np.floating] = field(init=False)
-    """The light transmission profile through the canopy by layer."""
+    """The light transmission profile through the canopy by layer [-]."""
     transmission_to_ground: NDArray[np.floating] = field(init=False)
-    """The fraction of light reaching the ground below the canopy."""
+    """The fraction of light reaching the ground below the canopy [-]."""
 
     __experimental__ = True
 

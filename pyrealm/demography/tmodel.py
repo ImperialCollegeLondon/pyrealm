@@ -777,7 +777,7 @@ class StemAllometry(ToDataFrameMixin):
         self.crown_r0: NDArray[np.floating]
         """Crown radius scaling factor [-]"""
         self.crown_z_max: NDArray[np.floating]
-        """Height of maximum crown radius [-]]"""
+        """Height of maximum crown radius [m]"""
 
         # Populate DBH values for calculating allometry. The CohortData code already
         # enforces positive DBH, so only need to check at_dbh.
