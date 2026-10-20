@@ -444,7 +444,7 @@ class Canopy:
 
         # Set simple attributes
         self.max_stem_height = allometry.stem_height.max()
-        self.cohort_ids = cohorts["cohort_ids"].to_numpy()
+        self.cohort_ids = cohorts["cohort_id"].to_numpy()
         self.n_cohorts = len(cohorts)
         self.filled_community_area = canopy_area * (1 - self.canopy_gap_fraction)
 
