@@ -52,12 +52,12 @@ def calculate_crown_q_m(
 ) -> NDArray[np.floating]:
     """Calculate the crown scaling trait ``q_m``.
 
-    The value of q_m is a constant crown scaling parameter derived from the ``m`` and
-    ``n`` attributes defined for a plant functional type.
+    The value of q_m is a constant crown scaling parameter derived from the unitless
+    ``m`` and ``n`` attributes defined for a plant functional type.
 
     Args:
-        m: Crown shape parameter
-        n: Crown shape parameter
+        m: Crown shape parameter [-]
+        n: Crown shape parameter [-]
     """
     return (
         m
@@ -80,8 +80,8 @@ def calculate_crown_z_max_proportion(
         p_{zm} = \left(\dfrac{n-1}{m n -1}\right)^ {\tfrac{1}{n}}
 
     Args:
-        m: Crown shape parameter
-        n: Crown shape parameter
+        m: Crown shape parameter [-]
+        n: Crown shape parameter [-]
     """
 
     return ((n - 1) / (m * n - 1)) ** (1 / n)
@@ -123,42 +123,45 @@ class FloraValidator(BaseModel):
     pft_name: tuple[str, ...] = ("default",)
     r"""The name of the plant functional type."""
     a_hd: tuple[float, ...] = (116.0,)
-    r"""Initial slope of height-diameter relationship (:math:`a`, -)"""
+    r"""Initial slope of height-diameter relationship (:math:`a`, [-])"""
     ca_ratio: tuple[float, ...] = (390.43,)
-    r"""Initial ratio of crown area to stem cross-sectional area (:math:`c`, -)"""
+    r"""Initial ratio of crown area to stem cross-sectional area (:math:`c`, [-])"""
     h_max: tuple[float, ...] = (25.33,)
-    r"""Maximum tree height (:math:`H_m`, m)"""
+    r"""Maximum tree height (:math:`H_m`, [m])"""
     rho_s: tuple[float, ...] = (200.0,)
-    r"""Sapwood density (:math:`\rho_s`, kg Cm-3)"""
+    r"""Sapwood density as carbon mass per cubic metre (:math:`\rho_s`, [kg{C} m-3])"""
     lai: tuple[float, ...] = (1.8,)
-    """Leaf area index within the crown (:math:`L`,  -)"""
+    """Leaf area index within the crown (:math:`L`, [-])"""
     sla: tuple[float, ...] = (14.0,)
-    r"""Specific leaf area (:math:`\sigma`,  m2 kg-1 C)"""
+    r"""Specific leaf area (:math:`\sigma`, [m2 kg{C}-1])"""
     tau_f: tuple[float, ...] = (4.0,)
-    r"""Foliage turnover time (:math:`\tau_f`,years)"""
+    r"""Foliage turnover time, expressed as the number of years for complete
+     replacement of foliage mass (:math:`\tau_f`, [year])"""
     tau_r: tuple[float, ...] = (1.04,)
-    r"""Fine-root turnover time (:math:`\tau_r`,  years)"""
+    r"""Fine-root turnover time, expressed as the number of years for complete
+     replacement of fine-root mass (:math:`\tau_r`, [year])"""
     tau_b: tuple[float, ...] = (np.inf,)
-    r"""Branch turnover time (:math:`\tau_b`,  years)"""
+    r"""Branch turnover time, expressed as the number of years for complete
+     replacement of stem mass (:math:`\tau_b`, [year])"""
     par_ext: tuple[float, ...] = (0.5,)
     r"""Extinction coefficient of photosynthetically active radiation (PAR) (:math:`k`,
-     -)"""
+     [-])"""
     yld: tuple[float, ...] = (0.6,)
-    r"""Yield factor (:math:`y`,  -)"""
+    r"""Yield factor (:math:`y`,  [-])"""
     zeta: tuple[float, ...] = (0.17,)
-    r"""Ratio of fine-root mass to foliage area (:math:`\zeta`, kg C m-2)"""
+    r"""Ratio of fine-root carbon mass to foliage area (:math:`\zeta`, [kg{C} m-2])"""
     resp_r: tuple[float, ...] = (0.913,)
-    r"""Fine-root specific respiration rate (:math:`r_r`, year-1)"""
+    r"""Fine-root specific respiration rate (:math:`r_r`, [year-1])"""
     resp_s: tuple[float, ...] = (0.044,)
-    r"""Sapwood-specific respiration rate (:math:`r_s`,  year-1)"""
+    r"""Sapwood-specific respiration rate (:math:`r_s`,  [year-1])"""
     resp_f: tuple[float, ...] = (0.1,)
-    r"""Foliage maintenance respiration fraction (:math:`r_f`,  -)"""
+    r"""Foliage maintenance respiration fraction (:math:`r_f`,  [-])"""
     m: tuple[float, ...] = (2,)
-    r"""Crown shape parameter (:math:`m`, -)"""
+    r"""Crown shape parameter (:math:`m`, [-])"""
     n: tuple[float, ...] = (5,)
-    r"""Crown shape parameter (:math:`n`, -)"""
+    r"""Crown shape parameter (:math:`n`, [-])"""
     f_g: tuple[float, ...] = (0.05,)
-    r"""Crown gap fraction (:math:`f_g`, -)"""
+    r"""Crown gap fraction (:math:`f_g`, [-])"""
 
     # This decorator order for computed fields is recommended by pydantic but mypy
     # objects, so mute the warnings.
@@ -166,7 +169,8 @@ class FloraValidator(BaseModel):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def q_m(self) -> tuple[float, ...]:
-        """Scaling factor to derive maximum crown radius from crown area."""
+        """Scaling factor to derive maximum crown radius from crown area (:math:`q_m`,
+        [-])."""  # noqa : D205, D209
 
         # A bit odd here - the validator uses tuples of values, but the functions use
         # np.arrays. It makes more sense to keep those standalone functions as np inputs
@@ -178,8 +182,8 @@ class FloraValidator(BaseModel):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def z_max_prop(self) -> tuple[float, ...]:
-        """Proportion of stem height at which maximum crown radius is found."""
-
+        """Proportion of stem height at which maximum crown radius is found.
+        (:math:`p_{zm}`, [-])."""  # noqa : D205, D209
         # See comment on q_m property.
         return tuple(
             calculate_crown_z_max_proportion(
