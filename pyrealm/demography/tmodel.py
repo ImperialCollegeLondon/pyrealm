@@ -517,6 +517,8 @@ def calculate_fine_root_turnover(
 
     Equation 15 of :cite:`Li:2014bc` gives this as:
 
+    .. math::
+
         T = W_f \left(\frac{ \sigma \zeta}{\tau_r} \right),
 
     given the foliage mass of individuals (:math:`W_f`), the specific leaf area
