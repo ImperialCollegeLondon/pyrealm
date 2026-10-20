@@ -422,6 +422,8 @@ class Canopy:
         """Maximum height of any individual in the community (m)."""
         self.n_layers: int
         """Total number of canopy layers."""
+        self.cohort_ids: NDArray[np.integer | np.str_]
+        """Cohort ids for the cohorts in the canopy."""
         self.n_cohorts: int
         """Total number of cohorts in the canopy."""
         self.heights: NDArray[np.floating]
@@ -442,6 +444,7 @@ class Canopy:
 
         # Set simple attributes
         self.max_stem_height = allometry.stem_height.max()
+        self.cohort_ids = cohorts["cohort_ids"].to_numpy()
         self.n_cohorts = len(cohorts)
         self.filled_community_area = canopy_area * (1 - self.canopy_gap_fraction)
 
