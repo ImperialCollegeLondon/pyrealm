@@ -28,10 +28,10 @@ def basic_inputs_and_expected():
             mean_growth_temperature=np.array([20]),
         ),
         SimpleNamespace(
-            gpp=np.array([71.2246803]),
-            chi=np.array([0.69435201]),
-            vcmax=np.array([17.75034477]),
-            jmax=np.array([40.03293277]),
+            gpp=np.array([71.221741178]),
+            chi=np.array([0.6943018228]),
+            vcmax=np.array([17.75058177]),
+            jmax=np.array([40.03191055]),
         ),
     )
 
@@ -77,17 +77,17 @@ def variable_kphio(basic_inputs_and_expected):
     kphio_values = np.arange(0.001, 0.126, step=0.001)
     gpp = np.empty_like(kphio_values)
 
+    env = PModelEnvironment(
+        tc=inputs.tc,
+        patm=inputs.patm,
+        co2=inputs.co2,
+        vpd=inputs.vpd,
+        fapar=inputs.fapar,
+        ppfd=inputs.ppfd,
+    )
     for idx, kph in enumerate(kphio_values):
-        env = PModelEnvironment(
-            tc=inputs.tc,
-            patm=inputs.patm,
-            co2=inputs.co2,
-            vpd=inputs.vpd,
-            fapar=inputs.fapar,
-            ppfd=inputs.ppfd,
-        )
         mod = PModel(env, method_kphio="fixed", reference_kphio=kph)
-        gpp[idx] = mod.gpp
+        gpp[idx] = mod.gpp.item()
 
     return kphio_values, gpp
 
@@ -134,8 +134,8 @@ def variable_kphio(basic_inputs_and_expected):
         pytest.param(
             "sandoval",
             1 / 8,
-            does_not_raise(),
-            id="sandoval_ok_with_float",
+            pytest.raises(ValueError),
+            id="sandoval_cannot_be_changed",
         ),
     ],
 )

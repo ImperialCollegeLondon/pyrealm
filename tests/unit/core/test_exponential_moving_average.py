@@ -93,6 +93,30 @@ def test_exponential_moving_average_chunked(inputs_whole, alpha):
 
 
 @pytest.mark.parametrize(
+    argnames="inputs,initial_values,context_manager",
+    argvalues=[
+        pytest.param(np.ones(5), 2, does_not_raise(), id="scalar - valid"),
+        pytest.param(np.ones(5), np.ones(1), does_not_raise(), id="scalar 1D - valid"),
+        pytest.param(
+            np.ones((3, 2)),
+            np.ones(3),
+            pytest.raises(ValueError, match="The shape of initial_values is incorrect"),
+            id="1D - invalid",
+        ),
+        pytest.param(np.ones((3, 2)), np.ones(2), does_not_raise(), id="1D - valid"),
+    ],
+)
+def test_exponential_moving_average_initial_values_shape(
+    inputs, initial_values, context_manager
+):
+    """Test the shape checking of initial values in exponential_moving_average."""
+    from pyrealm.core.utilities import exponential_moving_average
+
+    with context_manager:
+        _ = exponential_moving_average(inputs, initial_values)
+
+
+@pytest.mark.parametrize(
     argnames="inputs,allow_holdover,context_manager,expected",
     argvalues=[
         pytest.param(

@@ -29,15 +29,15 @@ PATM = np.linspace(60, 110, 31)
 @pytest.mark.parametrize(
     argnames="formula", argvalues=["Allen1998", "Alduchov1996", "Sonntag1990"]
 )
-def test_calc_vp_sat(bigleaf, formula) -> None:
-    """Test the calc_vp_sat function."""
+def test_calculate_vp_sat(bigleaf, formula) -> None:
+    """Test the calculate_vp_sat function."""
 
     from pyrealm.constants import CoreConst
-    from pyrealm.core.hygro import calc_vp_sat
+    from pyrealm.core.hygro import calculate_vp_sat
 
     const = CoreConst(magnus_option=formula)
-    results = calc_vp_sat(TEMP, const)
-    expected = np.array(bigleaf["calc_vp_sat"][formula])
+    results = calculate_vp_sat(TEMP, const)
+    expected = np.array(bigleaf["calculate_vp_sat"][formula])
 
     assert_allclose(results, expected)
 

@@ -23,9 +23,11 @@ from warnings import warn
 
 import numpy as np
 from numpy.typing import NDArray
+from scipy.interpolate import interp1d
 
 from pyrealm.constants import CoreConst, PModelConst
-from pyrealm.core.utilities import summarize_attrs
+from pyrealm.core.utilities import check_input_shapes, summarize_attrs
+from pyrealm.core.xarray import ArrayType, is_arraytype, xarray_inputs
 from pyrealm.pmodel.acclimation import AcclimationModel
 from pyrealm.pmodel.arrhenius import ARRHENIUS_METHOD_REGISTRY, ArrheniusFactorABC
 from pyrealm.pmodel.jmax_limitation import (
@@ -78,7 +80,7 @@ class PModelABC(ABC):
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
         method_arrhenius: str = "simple",
-        reference_kphio: float | NDArray[np.floating] | None = None,
+        reference_kphio: float | ArrayType[np.floating] | None = None,
         **kwargs: dict[str, Any],
     ):
         self.shape: tuple = env.shape
@@ -93,6 +95,14 @@ class PModelABC(ABC):
         self.core_const: CoreConst = env.core_const
         """The CoreConst instance used to create the model environment."""
 
+        self.gpp_conversion_factor = (
+            (
+                (24 * 60 * 60)  # seconds to day
+                * 1e-6
+            )  # micrograms to grams
+            / self.core_const.k_c_molmass
+        )
+        """Penalty to apply to gpp when moving to daily gpp"""
         # -----------------------------------------------------------------------
         # Optimal Chi method setup
         # -----------------------------------------------------------------------
@@ -117,7 +127,7 @@ class PModelABC(ABC):
         pathway."""
 
         # -----------------------------------------------------------------------
-        # Cuantum yield of photosynthesis (kphio) setup
+        # Quantum yield of photosynthesis (kphio) setup
         # -----------------------------------------------------------------------
 
         self.method_kphio: str
@@ -134,6 +144,8 @@ class PModelABC(ABC):
             method_registry=QUANTUM_YIELD_CLASS_REGISTRY,
         )
 
+        if is_arraytype(reference_kphio):
+            reference_kphio = xarray_inputs(reference_kphio)
         self.reference_kphio = reference_kphio
         """The value of the the reference kphio to be used in the model."""
 
@@ -237,23 +249,19 @@ class PModelABC(ABC):
         estimated from :math:`J_{max}` using the selected method for Arrhenius scaling.
         """
 
-        self.gpp: NDArray[np.floating]
-        r"""Gross primary productivity (µg C m-2 s-1) calculated as:
-        
-        .. math::
-
-            \text{GPP} = \text{LUE} \cdot I_{abs}
-            
-        where :math:`I_{abs}` is the absorbed photosynthetic radiation.
-        """
+        self._gpp: NDArray[np.floating]
+        """Private variable storing unpenalised GPP predictions in (µg C m-2 s-1)."""
 
         self.gs: NDArray[np.floating]
         r"""Stomatal conductance (µmol m-2 s-1), calculated as:
 
         .. math::
 
-            g_s = \frac{LUE}{M_C}\frac{1}{c_a - c_i}
+            g_s = \frac{A}{c_a - c_i},
 
+        where :math:`A` is assimilation in µmol C m-2 s-1. The standard P Model uses 
+        the coordination hypothesis and hence :math:`A=A_c=A_j`.
+        
         When C4 photosynthesis is being used, the true partial pressure of CO2 in the
         substomatal cavities (:math:`c_i`) is used following the calculation of
         :math:`\chi` using
@@ -269,8 +277,29 @@ class PModelABC(ABC):
         self.J: NDArray[np.floating]
         """Electron transfer rate."""
 
+        self.gpp_penalty_factor: NDArray[np.floating] | None = None
+        """An optional post-hoc GPP penalty factor applied to the model."""
+
+    @property
+    def gpp(self) -> NDArray[np.floating]:
+        r"""Gross primary productivity (µg C m-2 s-1).
+
+        If a post-hoc GPP penalty factor has been applied to the model (see
+        :meth:`apply_gpp_penalty_factor`) then the value returned is the penalised GPP.
+        """
+        if self.gpp_penalty_factor is None:
+            return self._gpp
+
+        return self._gpp * self.gpp_penalty_factor
+
     @abstractmethod
     def _fit_model(self, *args: Any, **kwargs: Any) -> None:
+        pass
+
+    @abstractmethod
+    def _get_daily_gpp(
+        self, *arg: Any, **kwargs: Any
+    ) -> tuple[NDArray[np.datetime64], NDArray[np.floating]]:
         pass
 
     def __repr__(self) -> str:
@@ -278,6 +307,7 @@ class PModelABC(ABC):
 
         return (
             f"{self.__class__.__name__}("
+            f"{'' if self.gpp_penalty_factor is None else 'GPP penalized, '}"
             f"shape={self.shape}, "
             f"method_optchi={self.method_optchi}, "
             f"method_arrhenius={self.method_arrhenius}, "
@@ -292,7 +322,49 @@ class PModelABC(ABC):
             dp: The number of decimal places used in rounding summary stats.
         """
 
-        summarize_attrs(self, self._data_attributes, dp=dp)
+        attrs = self._data_attributes
+
+        if self.gpp_penalty_factor is not None:
+            attrs = (*attrs, ("gpp_penalty_factor", "-"))
+
+        summarize_attrs(self, attrs, dp=dp)
+
+    def apply_gpp_conversion_factor(self, daily_mean_pmodel_gpp: NDArray) -> NDArray:
+        """Apply the gpp conversion factor to the input daily gpp."""
+        return daily_mean_pmodel_gpp * self.gpp_conversion_factor
+
+    def apply_gpp_penalty_factor(self, penalty_factor: ArrayType[np.floating]) -> None:
+        r"""Apply a post-hoc GPP penalty factor to GPP predictions.
+
+        Some productivity models apply a post-hoc penalty factor to the predicted GPP of
+        the P Model to correct for other influences on productivity. Examples included
+        the soil moisture penalty factors implemented as
+        :meth:`pyrealm.pmodel.functions.calculate_soilmstress_mengoli` and
+        :meth:`pyrealm.pmodel.functions.calculate_soilmstress_stocker`.
+
+        This method allows such a factor (:math:`f \in [0,1]`) to be applied to a fitted
+        P Model instance. The `gpp` attribute of the model will then return the product
+        of the raw GPP predictions and the provided penalty factor.
+
+        The main use of this method is to allow penalised GPP to be used with other
+        `pyrealm` methods that take a P Model as an input.
+
+        Args:
+            penalty_factor: An array of GPP penalty value.
+        """
+
+        penalty_factor = xarray_inputs(penalty_factor, dims=self.env.dims)
+        _ = check_input_shapes(penalty_factor, shape=self.shape)
+
+        self.gpp_penalty_factor = penalty_factor
+
+    def remove_gpp_penalty_factor(self) -> None:
+        """Removes a post-hoc GPP penalty factor.
+
+        This method removes a previously applied GPP penalty factor.
+        """
+
+        self.gpp_penalty_factor = None
 
     def _method_setter(
         self,
@@ -343,8 +415,8 @@ class PModel(PModelABC):
         ``method_optchi`` implement different approaches to soil moisture effects on
         photosynthesis. See also the alternative GPP penalty factors that can be applied
         after fitting the P Model
-        (:func:`pyrealm.pmodel.functions.calc_soilmstress_stocker` and
-        :func:`pyrealm.pmodel.functions.calc_soilmstress_mengoli`).
+        (:func:`pyrealm.pmodel.functions.calculate_soilmstress_stocker` and
+        :func:`pyrealm.pmodel.functions.calculate_soilmstress_mengoli`).
 
     Args:
         env: An instance of
@@ -384,7 +456,7 @@ class PModel(PModelABC):
         method_jmaxlim: str = "wang17",
         method_kphio: str = "temperature",
         method_arrhenius: str = "simple",
-        reference_kphio: float | NDArray[np.floating] | None = None,
+        reference_kphio: float | ArrayType[np.floating] | None = None,
     ) -> None:
         # Initialise the superclass
         super().__init__(
@@ -408,8 +480,9 @@ class PModel(PModelABC):
 
         warn(
             """
-    Pyrealm 2.0.0 uses a new default for the quantum yield of photosynthesis (phi0=1/8).
-    You may need to change settings to duplicate results from pyrealm 1.0.0.
+            The default value for quantum yield of photosynthesis (phi0=1/8) has changed
+            since pyrealm 1.0.0. You may need to change settings to duplicate results 
+            from pyrealm 1.0.0.
             """,
             category=UserWarning,
         )
@@ -452,7 +525,7 @@ class PModel(PModelABC):
         iabs = self.env.fapar * self.env.ppfd
 
         # GPP
-        self.gpp = self.lue * iabs
+        self._gpp = self.lue * iabs
 
         # Calculate V_cmax and J_max
         self.vcmax = self.kphio.kphio * iabs * self.optchi.mjoc * self.jmaxlim.f_v
@@ -487,11 +560,40 @@ class PModel(PModelABC):
                 np.nan,
             )
 
+    def _get_daily_gpp(
+        self,
+        datetimes: NDArray[np.datetime64],
+    ) -> tuple[NDArray[np.datetime64], NDArray[np.floating]]:
+        """Interpolate gpp values to daily intervals.
+
+        Args: datetimes: Array with datetimes of observations
+        """
+
+        # Screen for precision of datetimes - this is necessary to match the precision
+        # used in interpolating to daily values.
+        if not (datetimes.dtype == np.dtype("datetime64[D]")):
+            warn("Datetimes are not at daily precision and have been converted")
+            datetimes = datetimes.astype("datetime64[D]")
+
+        # Get the integer representation of the datetimes
+        time_int = datetimes.astype(np.int_)
+
+        # The interp1d object cannot be called with datetime64 values as new_x
+        interpolator = interp1d(time_int, self.gpp, axis=0)
+
+        daily_timestamps = np.arange(
+            datetimes[0], datetimes[-1] + np.timedelta64(1, "D"), np.timedelta64(1, "D")
+        )
+        daily_timestamps_int = daily_timestamps.astype(np.int_)
+        daily_gpp = interpolator(daily_timestamps_int)
+
+        return daily_timestamps_int.astype("datetime64[D]"), daily_gpp
+
     def to_subdaily(
         self,
         acclim_model: AcclimationModel,
         previous_realised: tuple[
-            NDArray[np.floating], NDArray[np.floating], NDArray[np.floating]
+            ArrayType[np.floating], ArrayType[np.floating], ArrayType[np.floating]
         ]
         | None = None,
     ) -> SubdailyPModel:
@@ -574,6 +676,8 @@ class SubdailyPModel(PModelABC):
       acclimating values of :math:`\xi` but the actual subdaily values of temperature
       and vapour pressure deficit.
     * Predictions of GPP are then made as in the standard P Model.
+    * The coordination hypothesis does not apply to the subdaily P Model and so stomatal
+      conductance (``gs``) is calculated using assimilation as :math:`A=min(A_c, A_j)`.
 
     As with the :class:`~pyrealm.pmodel.pmodel.PModel`, the values of the `kphio`
     argument _can_ be provided as an array of values, potentially varying through time
@@ -643,8 +747,8 @@ class SubdailyPModel(PModelABC):
         method_jmaxlim: str = "wang17",
         method_kphio: str = "temperature",
         method_arrhenius: str = "simple",
-        reference_kphio: float | NDArray[np.floating] | None = None,
-        previous_realised: dict[str, NDArray[np.floating]] | None = None,
+        reference_kphio: float | ArrayType[np.floating] | None = None,
+        previous_realised: dict[str, ArrayType[np.floating]] | None = None,
     ) -> None:
         # Initialise the superclass
         super().__init__(
@@ -698,7 +802,7 @@ class SubdailyPModel(PModelABC):
     def _fit_model(
         self,
         acclim_model: AcclimationModel,
-        previous_realised: dict[str, NDArray[np.floating]] | None,
+        previous_realised: dict[str, ArrayType[np.floating]] | None,
     ) -> None:
         """Calculation logic of the subdaily P Model."""
 
@@ -737,9 +841,7 @@ class SubdailyPModel(PModelABC):
             if not (
                 isinstance(previous_realised, dict)
                 and (set(["xi", "jmax25", "vcmax25"]) == previous_realised.keys())
-                and all(
-                    [isinstance(val, np.ndarray) for val in previous_realised.values()]
-                )
+                and all([is_arraytype(val) for val in previous_realised.values()])
             ):
                 raise ValueError(
                     "previous_realised must be a dictionary of arrays, with entries "
@@ -759,7 +861,9 @@ class SubdailyPModel(PModelABC):
                     "`previous_realised` arrays have wrong shape in SubdailyPModel"
                 )
 
-            self.previous_realised = previous_realised
+            self.previous_realised = {
+                key: xarray_inputs(val) for key, val in previous_realised.items()
+            }
 
         # 1) Generate a PModelEnvironment containing the average conditions within the
         #    daily acclimation window. This daily average environment also needs to also
@@ -928,7 +1032,7 @@ class SubdailyPModel(PModelABC):
 
         # Calculate GPP and convert from mol to gC
         assimilation = np.minimum(self.A_j, self.A_c)
-        self.gpp = assimilation * self.env.core_const.k_c_molmass
+        self._gpp = assimilation * self.env.core_const.k_c_molmass
 
         # Stomatal conductance - do not estimate when VPD = 0 or when floating point
         # errors give rise to (ca - ci) < 0 and deliberately ignore the numpy divide by
@@ -937,7 +1041,7 @@ class SubdailyPModel(PModelABC):
         with np.errstate(divide="ignore", invalid="ignore"):
             self.gs = np.where(
                 np.logical_and(self.env.vpd > 0, ca_ci_diff > 0),
-                self.A_c / ca_ci_diff,
+                assimilation / ca_ci_diff,
                 np.nan,
             )
 
@@ -950,3 +1054,21 @@ class SubdailyPModel(PModelABC):
         raise AttributeError(
             "The Subdaily P Model does not predict light use efficiency."
         )
+
+    def _get_daily_gpp(self) -> tuple[NDArray[np.datetime64], NDArray[np.floating]]:
+        """Average gpp values to daily means - does not apply penalty."""
+
+        # Reshape gpp array by day
+        gpp_by_day = self.gpp.view()
+        gpp_by_day.shape = tuple(
+            [
+                self.acclim_model.n_days,
+                self.acclim_model.n_obs,
+                *list(self.gpp.shape[1:]),
+            ]
+        )
+
+        # Take mean (allowing for missing values)
+        daily_mean_gpp = np.nanmean(gpp_by_day, axis=1)
+
+        return self.acclim_model.observation_dates, daily_mean_gpp

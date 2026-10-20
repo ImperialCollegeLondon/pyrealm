@@ -73,7 +73,7 @@ import numpy as np
 import xarray
 
 from pyrealm.core.water import DENSITY_METHODS, VISCOSITY_METHODS
-from pyrealm.core.pressure import calc_patm
+from pyrealm.core.pressure import calculate_patm
 from pyrealm.constants import CoreConst
 from pyrealm.pmodel import PModel, PModelEnvironment
 
@@ -375,20 +375,19 @@ small.
 data_path = resources.files("pyrealm_build_data.rpmodel") / "pmodel_global.nc"
 ds = xarray.load_dataset(data_path)
 
-# Extract the six variables for the two months and convert from
-# xarray DataArray objects to numpy arrays
-temp = ds["temp"].to_numpy()
-co2 = ds["CO2"].to_numpy()
-elev = ds["elevation"].to_numpy()
-vpd = ds["VPD"].to_numpy()
+# Extract the six variables for the two months
+temp = ds["temp"]
+co2 = ds["CO2"]
+elev = ds["elevation"]
+vpd = ds["VPD"]
 fapar = np.array([1.0])
 ppfd = np.array([1.0])
 
 # Convert elevation to atmospheric pressure
-patm = calc_patm(elev)
+patm = calculate_patm(elev)
 
 # Mask out temperature values below -25°C
-temp[temp < -25] = np.nan
+temp = temp.where(temp >= -25)
 
 # Clip VPD to force negative VPD to be zero
 vpd = np.clip(vpd, 0, np.inf)

@@ -12,10 +12,11 @@ from numpy.typing import NDArray
 from pyrealm.constants import CoreConst
 from pyrealm.core.bounds import BoundsChecker
 from pyrealm.core.utilities import evaluate_horner_polynomial
+from pyrealm.core.xarray import ArrayType, xarray_inputs
 
 
-def calc_vp_sat(
-    ta: NDArray[np.floating], core_const: CoreConst = CoreConst()
+def calculate_vp_sat(
+    tc: ArrayType[np.floating], core_const: CoreConst = CoreConst()
 ) -> NDArray[np.floating]:
     r"""Calculate vapour pressure of saturated air.
 
@@ -30,7 +31,7 @@ def calc_vp_sat(
     :attr:`~pyrealm.constants.core_const.CoreConst.magnus_coef`.
 
     Args:
-        ta: The air temperature in °C.
+        tc: The air temperature in °C.
         core_const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
             giving the parameters for conversions.
 
@@ -41,34 +42,36 @@ def calc_vp_sat(
         >>> # Saturated vapour pressure at 21°C
         >>> import numpy as np
         >>> temp = np.array([21])
-        >>> calc_vp_sat(temp).round(6)
+        >>> calculate_vp_sat(temp).round(6)
         array([2.480904])
         >>> from pyrealm.constants import CoreConst
         >>> allen = CoreConst(magnus_option='Allen1998')
-        >>> calc_vp_sat(temp, core_const=allen).round(6)
+        >>> calculate_vp_sat(temp, core_const=allen).round(6)
         array([2.487005])
         >>> alduchov = CoreConst(magnus_option='Alduchov1996')
-        >>> calc_vp_sat(temp, core_const=alduchov).round(6)
+        >>> calculate_vp_sat(temp, core_const=alduchov).round(6)
         array([2.481888])
     """
 
+    tc = xarray_inputs(tc)
+
     # Magnus equation and conversion to kPa
     cf = core_const.magnus_coef
-    vp_sat = cf[0] * np.exp((cf[1] * ta) / (cf[2] + ta)) / 1000
+    vp_sat = cf[0] * np.exp((cf[1] * tc) / (cf[2] + tc)) / 1000
 
     return vp_sat
 
 
 def convert_vp_to_vpd(
-    vp: NDArray[np.floating],
-    ta: NDArray[np.floating],
+    vp: ArrayType[np.floating],
+    tc: ArrayType[np.floating],
     core_const: CoreConst = CoreConst(),
 ) -> NDArray[np.floating]:
     """Convert vapour pressure to vapour pressure deficit.
 
     Args:
         vp: The vapour pressure in kPa
-        ta: The air temperature in °C
+        tc: The air temperature in °C
         core_const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
             giving the settings to be used in conversions.
 
@@ -86,14 +89,16 @@ def convert_vp_to_vpd(
         >>> convert_vp_to_vpd(vp, temp, core_const=allen).round(7)
         array([0.5870054])
     """
-    vp_sat = calc_vp_sat(ta, core_const=core_const)
+
+    vp, tc = xarray_inputs(vp, tc)
+    vp_sat = calculate_vp_sat(tc, core_const=core_const)
 
     return vp_sat - vp
 
 
 def convert_rh_to_vpd(
-    rh: NDArray[np.floating],
-    ta: NDArray[np.floating],
+    rh: ArrayType[np.floating],
+    tc: ArrayType[np.floating],
     core_const: CoreConst = CoreConst(),
     bounds_checker: BoundsChecker = BoundsChecker(),
 ) -> NDArray[np.floating]:
@@ -101,7 +106,7 @@ def convert_rh_to_vpd(
 
     Args:
         rh: The relative humidity (proportion in (0,1))
-        ta: The air temperature in °C
+        tc: The air temperature in °C
         core_const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
             giving the settings to be used in conversions.
         bounds_checker: A BoundsChecker instance used to validate inputs.
@@ -122,16 +127,17 @@ def convert_rh_to_vpd(
         array([0.7461016])
     """
 
+    rh, tc = xarray_inputs(rh, tc)
     rh = bounds_checker.check("rh", rh)
 
-    vp_sat = calc_vp_sat(ta, core_const=core_const)
+    vp_sat = calculate_vp_sat(tc, core_const=core_const)
 
     return vp_sat - (rh * vp_sat)
 
 
 def convert_sh_to_vp(
-    sh: NDArray[np.floating],
-    patm: NDArray[np.floating],
+    sh: ArrayType[np.floating],
+    patm: ArrayType[np.floating],
     core_const: CoreConst = CoreConst(),
 ) -> NDArray[np.floating]:
     """Convert specific humidity to vapour pressure.
@@ -153,20 +159,21 @@ def convert_sh_to_vp(
         array([0.9517451])
     """
 
+    sh, patm = xarray_inputs(sh, patm)
     return sh * patm / ((1.0 - core_const.mwr) * sh + core_const.mwr)
 
 
 def convert_sh_to_vpd(
-    sh: NDArray[np.floating],
-    ta: NDArray[np.floating],
-    patm: NDArray[np.floating],
+    sh: ArrayType[np.floating],
+    tc: ArrayType[np.floating],
+    patm: ArrayType[np.floating],
     core_const: CoreConst = CoreConst(),
 ) -> NDArray[np.floating]:
     """Convert specific humidity to vapour pressure deficit.
 
     Args:
         sh: The specific humidity in kg kg-1
-        ta: The air temperature in °C
+        tc: The air temperature in °C
         patm: The atmospheric pressure in kPa
         core_const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
             giving the settings to be used in conversions.
@@ -187,7 +194,8 @@ def convert_sh_to_vpd(
         array([1.53526])
     """
 
-    vp_sat = calc_vp_sat(ta, core_const=core_const)
+    sh, tc, patm = xarray_inputs(sh, tc, patm)
+    vp_sat = calculate_vp_sat(tc, core_const=core_const)
     vp = convert_sh_to_vp(sh, patm, core_const=core_const)
 
     return vp_sat - vp
@@ -196,8 +204,8 @@ def convert_sh_to_vpd(
 # The following functions are integrated from the evap.py implementation of SPLASH v1.
 
 
-def calc_saturation_vapour_pressure_slope(
-    tc: NDArray[np.floating],
+def calculate_saturation_vapour_pressure_slope(
+    tc: ArrayType[np.floating],
 ) -> NDArray[np.floating]:
     """Calculate the slope of the saturation vapour pressure curve.
 
@@ -211,6 +219,8 @@ def calc_saturation_vapour_pressure_slope(
         The calculated slope in kPa °C-1.
     """
 
+    tc = xarray_inputs(tc)
+
     # TODO move these coefficients into constants?
     return (
         17.269
@@ -220,7 +230,7 @@ def calc_saturation_vapour_pressure_slope(
     )
 
 
-def calc_enthalpy_vaporisation(tc: NDArray[np.floating]) -> NDArray[np.floating]:
+def calculate_enthalpy_vaporisation(tc: ArrayType[np.floating]) -> NDArray[np.floating]:
     """Calculate the enthalpy of vaporization.
 
     Calculates the latent heat of vaporization of water as a function of
@@ -233,11 +243,13 @@ def calc_enthalpy_vaporisation(tc: NDArray[np.floating]) -> NDArray[np.floating]
         Calculated latent heat of vaporisation (J/Kg).
     """
 
+    tc = xarray_inputs(tc)
+
     # TODO move these coefficients into constants?
     return 1.91846e6 * ((tc + 273.15) / (tc + 273.15 - 33.91)) ** 2
 
 
-def calc_specific_heat(tc: NDArray[np.floating]) -> NDArray[np.floating]:
+def calculate_specific_heat(tc: ArrayType[np.floating]) -> NDArray[np.floating]:
     """Calculate the specific heat of air.
 
     Calculates the specific heat of air at a constant pressure (:math:`c_{pm}`, J/kg/K)
@@ -250,6 +262,8 @@ def calc_specific_heat(tc: NDArray[np.floating]) -> NDArray[np.floating]:
     Returns:
         The specific heat of air values.
     """
+
+    tc = xarray_inputs(tc)
 
     # TODO move these coefficients into constants?
 
@@ -269,9 +283,9 @@ def calc_specific_heat(tc: NDArray[np.floating]) -> NDArray[np.floating]:
     return cp
 
 
-def calc_psychrometric_constant(
-    tc: NDArray[np.floating],
-    p: NDArray[np.floating],
+def calculate_psychrometric_constant(
+    tc: ArrayType[np.floating],
+    patm: ArrayType[np.floating],
     core_const: CoreConst = CoreConst(),
 ) -> NDArray[np.floating]:
     r"""Calculate the psychrometric constant.
@@ -282,7 +296,7 @@ def calc_psychrometric_constant(
 
     Args:
         tc: Air temperature (°C)
-        p: Atmospheric pressure (Pa)
+        patm: Atmospheric pressure (Pa)
         core_const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
             giving the settings to be used in conversions.
 
@@ -290,12 +304,14 @@ def calc_psychrometric_constant(
         The calculated psychrometric constant
     """
 
+    tc, patm = xarray_inputs(tc, patm)
+
     # Calculate the specific heat capacity of water, J/kg/K
-    cp = calc_specific_heat(tc)
+    cp = calculate_specific_heat(tc)
 
     # Calculate latent heat of vaporization, J/kg
-    lv = calc_enthalpy_vaporisation(tc)
+    lv = calculate_enthalpy_vaporisation(tc)
 
     # Calculate psychrometric constant, Pa/K
     # Eq. 8, Allen et al. (1998)
-    return cp * core_const.k_Ma * p / (core_const.k_Mv * lv)
+    return cp * core_const.k_Ma * patm / (core_const.k_Mv * lv)

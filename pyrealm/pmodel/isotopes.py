@@ -1,5 +1,5 @@
 """The :mod:`~pyrealm.pmodel.isotopes` submodule provides the
-:class:`~pyrealm.pmodel.isotopes.CalcCarbonIsotopes` class, which is used to calculate
+:class:`~pyrealm.pmodel.isotopes.CarbonIsotopes` class, which is used to calculate
 isotopic discrimination within the PModel
 """  # noqa D210, D415
 
@@ -10,10 +10,11 @@ from numpy.typing import NDArray
 
 from pyrealm.constants import IsotopesConst
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
+from pyrealm.core.xarray import ArrayType, xarray_inputs
 from pyrealm.pmodel.pmodel import PModel
 
 
-class CalcCarbonIsotopes:
+class CarbonIsotopes:
     r"""Calculate :math:`\ce{CO2}` isotopic discrimination.
 
     This class estimates the fractionation of atmospheric CO2 by photosynthetic
@@ -43,12 +44,14 @@ class CalcCarbonIsotopes:
     def __init__(
         self,
         pmodel: PModel,
-        D14CO2: NDArray[np.floating],
-        d13CO2: NDArray[np.floating],
+        D14CO2: ArrayType[np.floating],
+        d13CO2: ArrayType[np.floating],
         isotopes_const: IsotopesConst = IsotopesConst(),
     ):
+        d13CO2, D14CO2 = xarray_inputs(d13CO2, D14CO2, dims=pmodel.env.dims)
+
         # Check inputs are congruent
-        _ = check_input_shapes(pmodel.env.tc, d13CO2, D14CO2)
+        _ = check_input_shapes(d13CO2, D14CO2, shape=pmodel.env.shape)
 
         self.isotopes_const: IsotopesConst = isotopes_const
         """The IsotopesParams instance used to calculate estimates."""
@@ -82,9 +85,9 @@ class CalcCarbonIsotopes:
         # TODO: map methods for delta13C to C3 and C4.
 
         if self.c4:
-            self.calc_c4_discrimination(pmodel)
+            self.calculate_c4_discrimination(pmodel)
         else:
-            self.calc_c3_discrimination(pmodel)
+            self.calculate_c3_discrimination(pmodel)
 
         # 14C discrimination is twice the 13C discrimination (Graven et al. 2020)
         self.Delta14C = self.Delta13C * 2
@@ -97,10 +100,10 @@ class CalcCarbonIsotopes:
         self.d13C_wood = self.d13C_leaf + self.isotopes_const.frank_postfrac
 
     def __repr__(self) -> str:
-        """Generates a string representation of a CalcCarbonIsotopes instance."""
-        return f"CalcCarbonIsotopes(shape={self.shape}, method={self.c4})"
+        """Generates a string representation of a CarbonIsotopes instance."""
+        return f"CarbonIsotopes(shape={self.shape}, method={self.c4})"
 
-    def calc_c4_discrimination(self, pmodel: PModel) -> None:
+    def calculate_c4_discrimination(self, pmodel: PModel) -> None:
         r"""Calculate C4 isotopic discrimination.
 
         In this method, :math:`\delta\ce{^{13}C}` is calculated from optimal
@@ -123,11 +126,11 @@ class CalcCarbonIsotopes:
             ...     pmodel_const=pmodel_const
             ... )
             >>> mod_c4 = PModel(env, method_optchi='c4_no_gamma')
-            >>> mod_c4_delta = CalcCarbonIsotopes(mod_c4, d13CO2= -8.4, D14CO2 = 19.2)
+            >>> mod_c4_delta = CarbonIsotopes(mod_c4, d13CO2= -8.4, D14CO2 = 19.2)
             >>> mod_c4_delta.Delta13C.round(4)
-            array([5.6636])
+            array([5.6647])
             >>> mod_c4_delta.d13C_leaf.round(4)
-            array([-13.9844])
+            array([-13.9855])
         """
 
         # Equation from C3/C4 paper
@@ -137,7 +140,7 @@ class CalcCarbonIsotopes:
         )
         self.Delta13C = self.Delta13C_simple
 
-    def calc_c4_discrimination_vonC(self, pmodel: PModel) -> None:
+    def calculate_c4_discrimination_vonC(self, pmodel: PModel) -> None:
         r"""Calculate C4 isotopic discrimination.
 
         In this method, :math:`\delta\ce{^{13}C}` is calculated from optimal
@@ -164,7 +167,7 @@ class CalcCarbonIsotopes:
             ...     pmodel_const=pmodel_const
             ... )
             >>> mod_c4 = PModel(env, method_optchi='c4_no_gamma')
-            >>> mod_c4_delta = CalcCarbonIsotopes(mod_c4, d13CO2= -8.4, D14CO2 = 19.2)
+            >>> mod_c4_delta = CarbonIsotopes(mod_c4, d13CO2= -8.4, D14CO2 = 19.2)
             >>> # mod_c4_delta.Delta13C.round(4)
             >>> # array([5.2753])
             >>> # mod_c4_delta.d13C_leaf.round(4)
@@ -191,7 +194,7 @@ class CalcCarbonIsotopes:
 
         self.Delta13C = self.Delta13C_simple
 
-    def calc_c3_discrimination(self, pmodel: PModel) -> None:
+    def calculate_c3_discrimination(self, pmodel: PModel) -> None:
         r"""Calculate C3 isotopic discrimination.
 
         This method calculates the isotopic discrimination for
@@ -209,11 +212,11 @@ class CalcCarbonIsotopes:
             ...              theta=np.array([0.4])
             ... )
             >>> mod_c3 = PModel(env, method_optchi='lavergne20_c3')
-            >>> mod_c3_delta = CalcCarbonIsotopes(mod_c3, d13CO2= -8.4, D14CO2 = 19.2)
+            >>> mod_c3_delta = CarbonIsotopes(mod_c3, d13CO2= -8.4, D14CO2 = 19.2)
             >>> mod_c3_delta.Delta13C.round(4)
-            array([20.4056])
+            array([20.4045])
             >>> mod_c3_delta.d13C_leaf.round(4)
-            array([-28.2296])
+            array([-28.2285])
         """
 
         # 13C discrimination (permil): Farquhar et al. (1982)
@@ -233,10 +236,10 @@ class CalcCarbonIsotopes:
         )
 
     def summarize(self, dp: int = 2) -> None:
-        """Print summary of values estimated in CalcCarbonIsotopes.
+        """Print summary of values estimated in CarbonIsotopes.
 
         Prints a summary of the variables calculated within an instance of
-        CalcCarbonIsotopes including the mean, range and number of nan values.
+        CarbonIsotopes including the mean, range and number of nan values.
 
         Args:
             dp: The number of decimal places used in rounding summary stats.

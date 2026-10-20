@@ -83,3 +83,8 @@ language_info:
 .. autoclass:: pyrealm.constants.phenology_const.PhenologyConst
     :members:
 ```
+
+```{eval-rst}
+.. autoclass:: pyrealm.constants.phenology_const.PhenologyConstNew
+    :members:
+```

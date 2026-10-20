@@ -1,0 +1,7 @@
+pft_name,dbh_value,n_individuals,community_id
+"short",0.02,15,1
+"short",0.20,5,1
+"tall",0.5,2,1
+"short",0.02,15,2
+"short",0.20,5,2
+"tall",0.5,2,2

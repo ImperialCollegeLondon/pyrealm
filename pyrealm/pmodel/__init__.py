@@ -35,36 +35,36 @@ from pyrealm.pmodel.competition import (
     convert_gpp_advantage_to_c4_fraction,
 )
 from pyrealm.pmodel.functions import (
-    calc_co2_to_ca,
-    calc_ftemp_inst_rd,
-    calc_gammastar,
-    calc_kmm,
-    calc_ns_star,
-    calc_soilmstress_mengoli,
-    calc_soilmstress_stocker,
+    calculate_co2_to_ca,
+    calculate_ftemp_inst_rd,
+    calculate_gammastar,
     calculate_kattge_knorr_arrhenius_factor,
+    calculate_kmm,
+    calculate_ns_star,
     calculate_simple_arrhenius_factor,
+    calculate_soilmstress_mengoli,
+    calculate_soilmstress_stocker,
 )
-from pyrealm.pmodel.isotopes import CalcCarbonIsotopes
+from pyrealm.pmodel.isotopes import CarbonIsotopes
 from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 
 __all__ = [
     "AcclimationModel",
     "C3C4Competition",
-    "CalcCarbonIsotopes",
+    "CarbonIsotopes",
     "PModel",
     "PModelEnvironment",
     "SubdailyPModel",
-    "calc_co2_to_ca",
-    "calc_ftemp_inst_rd",
-    "calc_gammastar",
-    "calc_kmm",
-    "calc_ns_star",
-    "calc_soilmstress_mengoli",
-    "calc_soilmstress_stocker",
+    "calculate_co2_to_ca",
+    "calculate_ftemp_inst_rd",
+    "calculate_gammastar",
     "calculate_kattge_knorr_arrhenius_factor",
+    "calculate_kmm",
+    "calculate_ns_star",
     "calculate_simple_arrhenius_factor",
+    "calculate_soilmstress_mengoli",
+    "calculate_soilmstress_stocker",
     "calculate_tree_proportion",
     "convert_gpp_advantage_to_c4_fraction",
 ]

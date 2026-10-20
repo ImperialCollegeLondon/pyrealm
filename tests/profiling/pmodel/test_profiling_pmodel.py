@@ -7,7 +7,7 @@ import pytest
 @pytest.mark.profiling
 def test_profiling_pmodel(pmodel_profile_data):
     """Running the profiler on the pmodel."""
-    from pyrealm.pmodel import C3C4Competition, CalcCarbonIsotopes
+    from pyrealm.pmodel import C3C4Competition, CarbonIsotopes
     from pyrealm.pmodel.pmodel import PModel
 
     # Unpack feature components
@@ -46,15 +46,11 @@ def test_profiling_pmodel(pmodel_profile_data):
     constant_D14CO2 = np.array([19.2])
 
     # Calculate for the C3 model
-    isotope_c3 = CalcCarbonIsotopes(
-        pmod_c3, d13CO2=constant_d13CO2, D14CO2=constant_D14CO2
-    )
+    isotope_c3 = CarbonIsotopes(pmod_c3, d13CO2=constant_d13CO2, D14CO2=constant_D14CO2)
     isotope_c3.summarize()
 
     # Calculate for the C4 model
-    isotope_c4 = CalcCarbonIsotopes(
-        pmod_c4, d13CO2=constant_d13CO2, D14CO2=constant_D14CO2
-    )
+    isotope_c4 = CarbonIsotopes(pmod_c4, d13CO2=constant_d13CO2, D14CO2=constant_D14CO2)
     isotope_c4.summarize()
 
     # Calculate the expected isotopic patterns in locations given the competition

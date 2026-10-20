@@ -9,22 +9,18 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
-language_info:
-  codemirror_mode:
-    name: ipython
-    version: 3
-  file_extension: .py
-  mimetype: text/x-python
-  name: python
-  nbconvert_exporter: python
-  pygments_lexer: ipython3
-  version: 3.11.9
 ---
 
 # Arrhenius scaling in the P Model
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here
-</_static/Arrhenius.ipynb>`.
+```{admonition} Run this notebook
+:class: hint
+
+* Read the guide on setting up your computer to [run Jupyter
+  notebooks](../../getting_started.md)
+* Download {nb-download}`this notebook<./arrhenius.ipynb>` as a Jupyter notebook.
+
+```
 
 :::{warning}
 This document discusses the form of the Arrhenius scaling used for estimating
@@ -73,9 +69,9 @@ This simple scaling factor is appropriate for calculating temperature scaling of
 enzyme systems:
 
 * The photorespiratory CO2 compensation point (`gammastar`, $\Gamma^\ast$,
-  {meth}`~pyrealm.pmodel.functions.calc_gammastar`).
+  {meth}`~pyrealm.pmodel.functions.calculate_gammastar`).
 * The Michaelis Menten coefficient of Rubisco-limited assimilation (`kmm`, $K_{MM}$,
-  {meth}`~pyrealm.pmodel.functions.calc_kmm`).
+  {meth}`~pyrealm.pmodel.functions.calculate_kmm`).
 
 ## Scaling of $V_{cmax}$ and $J_{max}$
 
@@ -125,7 +121,7 @@ tk = tc + core_const.k_CtoK
 simple = calculate_simple_arrhenius_factor(
     tk=tk,
     tk_ref=pmodel_const.tk_ref,
-    ha=pmodel_const.arrhenius_vcmax["simple"]["ha"],
+    ha=pmodel_const.arrhenius_vcmax["simple"].ha,
 )
 
 # Calculate the Kattge Knorr curve under three conditions:

@@ -28,9 +28,48 @@ package is being extended and revised. This document is describes the main chang
 functionality between major versions and provides code migration notes for changes in
 the API of `pyrealm` code.
 
-## Migration from 1.0.0 to version 2.0.0
+## Migration from 2.0 to version 3.0
 
-The versions of `PModel` and `SubdailyPModel` in `pyrealm` version 1.0.0 were based on
+The experimental `demography` module has been heavily restructured - refer to the [user
+documentation for demography](../users/demography/module_overview.md) to see the
+workflow and API changes.
+
+Other breaking changes are in the naming of objects and arguments:
+
+* `CalcCarbonIsotopes` has become `CarbonIsotopes`,
+* function names starting with `calc_` have changed to `calculate_` to follow the
+  wider usage in the package, and
+* argument names in `pyrealm.core.water` have been standardised to `tc` and `patm` from
+  `ta` and `p`, again to match usage elsewhere in the package.
+* argument and attribute names in the `pyrealm.splash` module have been updated to be
+  less obscure:
+
+  * `lat` to `latitude`
+  * `elv` to `elevation`
+  * `tc` to `temperature`
+  * `pa` to `patm`
+  * `pn` to `precipitation`
+  * `sf` to `sunshine_fraction`
+  * `kWn` to `soil_capacity`
+  * `wn` to `soil_moisture`
+  * `init_wn` to `initial_soil_moisture`
+  * `previous_wn` to `previous_soil_moisture`
+  * `day_idx` to `day_index`
+  * `sat` to `saturation_slope`
+  * `lv` to `enthalpy_vaporisation`
+  * `pw` to `water_density`
+  * `psy` to `psychrometric_constant`
+  * `econ` to `water_energy_conversion`
+  * `cond` to `condensation`
+  * `eet_d` to `daily_eet`
+  * `pet_d` to `daily_pet`
+
+* The `DailyEvapFluxes` class has been renamed `DailyEvaporativeFluxes`
+* The `calculate_patm` function now has the argument `elevation` not `elv`.
+
+## Migration from 1.0 to version 2.0
+
+The versions of `PModel` and `SubdailyPModel` in `pyrealm` version 1.0 were based on
 the original implementation of the `rpmodel` package {cite}`Stocker:2020dh` and the R
 code supporting {cite}`mengoli:2022a`, respectively. The two implementations:
 
@@ -40,7 +79,7 @@ code supporting {cite}`mengoli:2022a`, respectively. The two implementations:
 
 In addition, several core methods used within the calculations of both models had been
 rewritten to provide a more flexible and extensible framework for new research methods.
-So, version 2.0.0 provides a complete reworking of the package, with a particular focus
+So, version 2.0 provides a complete reworking of the package, with a particular focus
 on better integrating the  {class}`~pyrealm.pmodel.pmodel.PModel` and
 {class}`~pyrealm.pmodel.pmodel.SubdailyPModel` classes. This has led to a large
 number of breaking changes in the API. As the package uses [semantic
@@ -53,7 +92,57 @@ elevation over a time series. Most functionality in `pyrealm` now requires only 
 the shapes of the inputs can be [broadcast to each other](./array_inputs.md).
 
 The main user facing changes are shown below, but do also look at the [log of
-changes](#changes-log) for more detail.
+changes](#changes-log) for more detail. Most changes were introduced in version `2.0.0`
+but we have used version `2.0.1` to add some additional changes: these are noted below.
+
+### Renamed functions
+
+There were some function names mixed from `calc_` and `calculate_`. For consistency,
+we aligned these mixed names to `calculate_`.
+The renamed functions are:
+`calculate_patm` calculates the atmospheric pressure from elevation.
+`calculate_kmm` calculates the Michaelis Menten coefficient.
+`calculate_gammastar` calculates the photorespiratory CO2 compensation point.
+`calculate_co2_to_ca` converts Co2 part per million to Pascals.
+`calculate_soilmstress_mengoli` calculates the Mengoli et al. empirical soil
+moisture stress factor.
+`calculate_soilmstress_stocker` calculates Stocker’s empirical soil moisture stress factor.
+`calculate_ftemp_inst_rd` calculates temperature scaling of dark respiration.
+`calculate_ns_star` calculates the relative viscosity of water.
+`calculate_enthalpy_vaporisation` calculates the enthalpy of vaporization.
+`calculate_specific_heat` calculates the specific heat of air.
+`calculate_vp_sat` calculates vapour pressure of saturated air.
+`calculate_saturation_vapour_pressure_slope` calculates the slope of the
+saturation vapour pressure curve.
+`calculate_psychrometric_constant` calculates the psychrometric constant.
+`CarbonIsotopes.calculate_c3_discrimination` calculates c3 isotopic discrimination.
+`CarbonIsotopes.calculate_c4_discrimination` calculates c4 isotopic discrimination.
+`CarbonIsotopes.calculate_c4_discrimination_vonC` calculates c4 isotopic discrimination
+using the method from (von Caemmerer et al., 2014).
+`calculate_density_h2o` calculates water density.
+`calculate_viscosity_h2o` calculates the viscosity of water.
+
+### Water viscosity and density
+
+The `rpmodel` package used complex algorithms for calculating water density and
+viscosity. These provide high precision but are computationally demanding and give
+results that only differ slightly from much simpler alternatives. From version `2.0.1`,
+`pyrealm` provides a range of options for calculating water density and viscosity and
+changes the default algorithms to [faster and simpler approaches](./water.md).
+
+These settings are controlled using the
+{class}`~pyrealm.constants.core_const.CoreConst` class, which can be passed to the
+`core_const` argument of `pyrealm` functions and classes. The default settings now use:
+
+```python
+CoreConst(water_density_method="fisher", water_viscosity_method="vogel")
+```
+
+The behaviour of version `1.0` can be reproduced using:
+
+```python
+CoreConst(water_density_method="jones_harris_eq6", water_viscosity_method="huber")
+```
 
 ### The PModelEnvironment class
 
@@ -270,7 +359,7 @@ The {mod}`pyrealm.pmodel.functions` module provides a set of functions specific 
 calculations of the P Model and SubdailyPModel. Many of the functions used
 `pmodel_const` and `core_const` arguments to pass in constant values, but all are now
 unpacked so that the specific constants needed for each function are clear in the
-function signatures. In addition, the `calc_ftemp_kphio` and `calc_ftemp_inst_vcmax`
+function signatures. In addition, the `calculate_ftemp_kphio` and `calculate_ftemp_inst_vcmax`
 functions have been removed as they provided specific configurations of the more general
 `calculate_simple_arrhenius_factor` and `calculate_kattge_knorr_arrhenius_factor` that
 now replace them in the module.

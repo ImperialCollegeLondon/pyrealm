@@ -1,7 +1,7 @@
-r"""This submodule contains benchmark outputs from the ``calc_phi0.R`` script, which is
-an experimental approach to calculating the :math:`\phi_0` parameter for the P Model
-with modulation from climatic aridity and growing degree days and the current
-temperature. The calculation is implemented in ``pyrealm`` as
+r"""This submodule contains benchmark outputs from the ``calc_phi0.R`` script,
+which is an experimental approach to calculating the :math:`\phi_0` parameter for
+the P Modelwith modulation from climatic aridity and growing degree days and the
+current temperature. The calculation is implemented in ``pyrealm`` as
 :class:`~pyrealm.pmodel.quantum_yield.QuantumYieldSandoval`.
 
 The files are:

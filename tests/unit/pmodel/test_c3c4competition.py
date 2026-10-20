@@ -67,10 +67,15 @@ from numpy.testing import assert_allclose
     ],
 )
 def test_c3c4competition(pmodel_c3_args, pmodel_c4_args, expected):
-    """Test the C3/C4 competition model."""
+    """Test the C3/C4 competition model.
+
+    The test values were calculated when PModel still used the Stocker default phi0 and
+    the high precision water viscosity and density methods.
+    """
+    from pyrealm.constants import CoreConst
     from pyrealm.pmodel import (
         C3C4Competition,
-        CalcCarbonIsotopes,
+        CarbonIsotopes,
         PModelEnvironment,
     )
     from pyrealm.pmodel.pmodel import PModel
@@ -83,9 +88,11 @@ def test_c3c4competition(pmodel_c3_args, pmodel_c4_args, expected):
         theta=np.array([0.5]),
         fapar=np.array([1]),
         ppfd=np.array([800]),
+        core_const=CoreConst(
+            water_density_method="fisher", water_viscosity_method="huber"
+        ),
     )
 
-    # The test values were calculated when PModel still used the Stocker default phi0
     pmodel_c3 = PModel(env, **pmodel_c3_args, reference_kphio=0.081785)
     pmodel_c4 = PModel(env, **pmodel_c4_args, reference_kphio=0.081785)
 
@@ -100,8 +107,8 @@ def test_c3c4competition(pmodel_c3_args, pmodel_c4_args, expected):
     d13CO2 = np.array([-8.4])
     D14CO2 = np.array([19.2])
 
-    pmodel_c3_iso = CalcCarbonIsotopes(pmodel_c3, d13CO2=d13CO2, D14CO2=D14CO2)
-    pmodel_c4_iso = CalcCarbonIsotopes(pmodel_c4, d13CO2=d13CO2, D14CO2=D14CO2)
+    pmodel_c3_iso = CarbonIsotopes(pmodel_c3, d13CO2=d13CO2, D14CO2=D14CO2)
+    pmodel_c4_iso = CarbonIsotopes(pmodel_c4, d13CO2=d13CO2, D14CO2=D14CO2)
 
     comp.estimate_isotopic_discrimination(
         d13CO2=np.array([-8.4]),

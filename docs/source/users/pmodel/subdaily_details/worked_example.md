@@ -9,22 +9,19 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
-language_info:
-  codemirror_mode:
-    name: ipython
-    version: 3
-  file_extension: .py
-  mimetype: text/x-python
-  name: python
-  nbconvert_exporter: python
-  pygments_lexer: ipython3
-  version: 3.11.9
 ---
 
 # Worked example of the Subdaily P Model
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here
-</_static/SubdailyPModel.ipynb>`.
+```{admonition} Run this notebook
+:class: hint
+
+* Read the guide on setting up your computer to [run Jupyter
+  notebooks](../../getting_started.md)
+* Download {nb-download}`this notebook<./worked_example.ipynb>` as a Jupyter
+notebook.
+
+```
 
 ```{code-cell} ipython3
 from importlib import resources
@@ -75,7 +72,7 @@ dpath = (
 )
 ds = xarray.load_dataset(dpath)
 
-datetimes = ds["time"].to_numpy()
+datetimes = ds["time"]
 
 # Define three sites for showing time series
 sites = xarray.Dataset(
@@ -92,16 +89,16 @@ the atmospheric CO2 concentration.
 ```{code-cell} ipython3
 # Variable set up
 # Air temperature in °C from Tair in Kelvin
-tc = (ds["Tair"] - 273.15).to_numpy()
+tc = ds["Tair"] - 273.15
 # Atmospheric pressure in Pascals
-patm = ds["PSurf"].to_numpy()
+patm = ds["PSurf"]
 # Convert specific huidity to VPD and remove negative values
-vpd = convert_sh_to_vpd(sh=ds["Qair"].to_numpy(), ta=tc, patm=patm / 1000) * 1000
+vpd = convert_sh_to_vpd(sh=ds["Qair"], tc=tc, patm=patm / 1000) * 1000
 vpd = np.clip(vpd, 0, np.inf)
 # Extract fAPAR (unitless)
-fapar = ds["fAPAR"].to_numpy()
+fapar = ds["fAPAR"]
 # Convert SW downwelling radiation from W/m^2 to PPFD µmole/m2/s1
-ppfd = ds["SWdown"].to_numpy() * 2.04
+ppfd = ds["SWdown"] * 2.04
 # Define atmospheric CO2 concentration (ppm)
 co2 = np.ones_like(tc) * 400
 ```

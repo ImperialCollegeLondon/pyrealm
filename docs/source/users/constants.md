@@ -23,8 +23,13 @@ language_info:
 
 # Package constants
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here
-</_static/Constants.ipynb>`.
+```{admonition} Run this notebook
+:class: hint
+
+* Read the guide on setting up your computer to [run Jupyter
+  notebooks](./getting_started.md)
+* Download {nb-download}`this notebook<./constants.ipynb>` as a Jupyter notebook.
+```
 
 The models presented in this package rely on a relatively large number of underlying
 constants. In order to keep the argument lists of functions and classes as simple as

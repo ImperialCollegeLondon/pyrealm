@@ -291,7 +291,8 @@ def calculate_density_h2o(
 
     Calculates the density of water as a function of temperature and atmospheric
     pressure (in kg/m^3), using the method specified in
-    :attr:`CoreConst.water_density_method<pyrealm.constants.core_const.CoreConst.water_density_method>`.
+    :attr:`CoreConst.water_density_method<pyrealm.constants.core_const.CoreConst.water_density_method>`,
+    defaulting to ``jones_harris_eq6`` (:meth:`calculate_density_h2o_jones_harris_eq6`).
 
     Args:
         tc: air temperature, °C
@@ -309,7 +310,7 @@ def calculate_density_h2o(
 
     Examples:
         >>> calculate_density_h2o(20, 101325).round(3)
-        np.float64(998.206)
+        np.float64(998.201)
     """
 
     # Safe guard against instability in functions at low temperature.
@@ -626,7 +627,8 @@ def calculate_viscosity_h2o(
     Calculates the viscosity of water (:math:`\mu`, Pa s) as a function of temperature
     (:math:`T`, K) and atmospheric pressure (:math:`P`, Pa),  using the method specified
     in
-    :attr:`CoreConst.water_viscosity_method<pyrealm.constants.core_const.CoreConst.water_viscosity_method>`.
+    :attr:`CoreConst.water_viscosity_method<pyrealm.constants.core_const.CoreConst.water_viscosity_method>`,
+    defaulting to `vogel` (:meth:`calculate_viscosity_h2o_vogel`).
 
     Args:
         tk: air temperature (K)
@@ -635,8 +637,8 @@ def calculate_viscosity_h2o(
 
     Examples:
         >>> # Density of water at 20 °C and standard atmospheric pressure:
-        >>> calculate_viscosity_h2o(293.15, 101325).round(7)
-        np.float64(0.0010016)
+        >>> calculate_viscosity_h2o(293.15, 101325).round(8)
+        np.float64(0.00100353)
     """
 
     # Check input shapes, shape not used

@@ -30,6 +30,7 @@ from pyrealm.constants.two_leaf import TwoLeafConst
 from pyrealm.core.bounds import BoundsChecker
 from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.utilities import check_input_shapes
+from pyrealm.core.xarray import ArrayType, xarray_inputs
 from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 
 # ------------------------------
@@ -88,15 +89,20 @@ class TwoLeafIrradiance:
 
     def __init__(
         self,
-        solar_elevation: NDArray[np.floating],
-        ppfd: NDArray[np.floating],
-        leaf_area_index: NDArray[np.floating],
-        patm: NDArray[np.floating],
+        solar_elevation: ArrayType[np.floating],
+        ppfd: ArrayType[np.floating],
+        leaf_area_index: ArrayType[np.floating],
+        patm: ArrayType[np.floating],
         core_constants: CoreConst = CoreConst(),
         two_leaf_constants: TwoLeafConst = TwoLeafConst(),
         bounds_checker: BoundsChecker = BoundsChecker(),
     ):
         warn_experimental("TwoLeafIrradiance")
+
+        # Convert any xarray inputs
+        solar_elevation, ppfd, leaf_area_index, patm = xarray_inputs(
+            solar_elevation, ppfd, leaf_area_index, patm
+        )
 
         # Check shapes are consistent
         check_input_shapes(solar_elevation, ppfd, leaf_area_index, patm)
@@ -244,7 +250,7 @@ class TwoLeafIrradiance:
 
 
 def calculate_beam_extinction_coef(
-    solar_elevation: NDArray[np.floating],
+    solar_elevation: ArrayType[np.floating],
     solar_obscurity_angle: float = TwoLeafConst().solar_obscurity_angle,
     extinction_numerator: float = TwoLeafConst().direct_beam_extinction_numerator,
 ) -> NDArray[np.floating]:
@@ -268,6 +274,8 @@ def calculate_beam_extinction_coef(
         An array of beam extinction coefficients.
     """
 
+    solar_elevation = xarray_inputs(solar_elevation)
+
     return np.where(
         solar_elevation > solar_obscurity_angle,
         extinction_numerator / np.sin(solar_elevation),
@@ -276,8 +284,8 @@ def calculate_beam_extinction_coef(
 
 
 def calculate_fraction_of_diffuse_radiation(
-    patm: NDArray[np.floating],
-    solar_elevation: NDArray[np.floating],
+    patm: ArrayType[np.floating],
+    solar_elevation: ArrayType[np.floating],
     standard_pressure: float = CoreConst().k_Po,
     atmospheric_scattering: float = TwoLeafConst().atmospheric_scattering_coef,
     atmos_transmission_par: float = TwoLeafConst().atmos_transmission_par,
@@ -311,6 +319,8 @@ def calculate_fraction_of_diffuse_radiation(
         Array of fractions of diffuse radiation.
     """
 
+    patm, solar_elevation = xarray_inputs(patm, solar_elevation)
+
     # Optical air mass
     m = (patm / standard_pressure) / np.sin(solar_elevation)
 
@@ -330,7 +340,7 @@ def calculate_fraction_of_diffuse_radiation(
 
 
 def calculate_beam_reflectance(
-    beam_extinction: NDArray[np.floating],
+    beam_extinction: ArrayType[np.floating],
     horizontal_leaf_reflectance: float = TwoLeafConst().horizontal_leaf_reflectance,
 ) -> NDArray[np.floating]:
     r"""Calculate the beam irradiance for leaves with a uniform angle distribution.
@@ -352,17 +362,19 @@ def calculate_beam_reflectance(
         Array of beam irradiances.
     """
 
+    beam_extinction = xarray_inputs(beam_extinction)
+
     return 1.0 - np.exp(
         -2 * horizontal_leaf_reflectance * beam_extinction / (1 + beam_extinction)
     )
 
 
 def calculate_canopy_irradiance(
-    beam_reflectance: NDArray[np.floating],
-    beam_irradiance: NDArray[np.floating],
-    scattered_beam_extinction_coef: NDArray[np.floating],
-    diffuse_radiation: NDArray[np.floating],
-    leaf_area_index: NDArray[np.floating],
+    beam_reflectance: ArrayType[np.floating],
+    beam_irradiance: ArrayType[np.floating],
+    scattered_beam_extinction_coef: ArrayType[np.floating],
+    diffuse_radiation: ArrayType[np.floating],
+    leaf_area_index: ArrayType[np.floating],
     diffuse_reflectance: float = TwoLeafConst().diffuse_reflectance,
     diffuse_extinction_coef: float = TwoLeafConst().diffuse_extinction_coef,
 ) -> NDArray[np.floating]:
@@ -393,6 +405,20 @@ def calculate_canopy_irradiance(
         Canopy irradiance values.
     """
 
+    (
+        beam_reflectance,
+        beam_irradiance,
+        scattered_beam_extinction_coef,
+        diffuse_radiation,
+        leaf_area_index,
+    ) = xarray_inputs(
+        beam_reflectance,
+        beam_irradiance,
+        scattered_beam_extinction_coef,
+        diffuse_radiation,
+        leaf_area_index,
+    )
+
     return (1 - beam_reflectance) * beam_irradiance * (
         1 - np.exp(-scattered_beam_extinction_coef * leaf_area_index)
     ) + (1 - diffuse_reflectance) * diffuse_radiation * (
@@ -401,9 +427,9 @@ def calculate_canopy_irradiance(
 
 
 def calculate_sunlit_beam_irradiance(
-    beam_irradiance: NDArray[np.floating],
-    beam_extinction_coef: NDArray[np.floating],
-    leaf_area_index: NDArray[np.floating],
+    beam_irradiance: ArrayType[np.floating],
+    beam_extinction_coef: ArrayType[np.floating],
+    leaf_area_index: ArrayType[np.floating],
     leaf_scattering_coef: float = TwoLeafConst().leaf_scattering_coef,
 ) -> NDArray[np.floating]:
     r"""Calculate the sunlit beam irradiance.
@@ -425,6 +451,11 @@ def calculate_sunlit_beam_irradiance(
     Returns:
         Array of sunlit beam irradiance values.
     """
+
+    beam_irradiance, beam_extinction_coef, leaf_area_index = xarray_inputs(
+        beam_irradiance, beam_extinction_coef, leaf_area_index
+    )
+
     return (
         beam_irradiance
         * (1 - leaf_scattering_coef)
@@ -433,9 +464,9 @@ def calculate_sunlit_beam_irradiance(
 
 
 def calculate_sunlit_diffuse_irradiance(
-    diffuse_irradiance: NDArray[np.floating],
-    beam_extinction_coef: NDArray[np.floating],
-    leaf_area_index: NDArray[np.floating],
+    diffuse_irradiance: ArrayType[np.floating],
+    beam_extinction_coef: ArrayType[np.floating],
+    leaf_area_index: ArrayType[np.floating],
     diffuse_reflectance: float = TwoLeafConst().diffuse_reflectance,
     diffuse_extinction_coef: float = TwoLeafConst().diffuse_extinction_coef,
 ) -> NDArray[np.floating]:
@@ -461,6 +492,11 @@ def calculate_sunlit_diffuse_irradiance(
     Returns:
         Array of sunlit diffuse irradiance values.
     """
+
+    diffuse_irradiance, beam_extinction_coef, leaf_area_index = xarray_inputs(
+        diffuse_irradiance, beam_extinction_coef, leaf_area_index
+    )
+
     return (
         diffuse_irradiance
         * (1 - diffuse_reflectance)
@@ -476,11 +512,11 @@ def calculate_sunlit_diffuse_irradiance(
 
 
 def calculate_sunlit_scattered_irradiance(
-    beam_irradiance: NDArray[np.floating],
-    beam_reflectance: NDArray[np.floating],
-    scattered_beam_extinction_coef: NDArray[np.floating],
-    beam_extinction_coef: NDArray[np.floating],
-    leaf_area_index: NDArray[np.floating],
+    beam_irradiance: ArrayType[np.floating],
+    beam_reflectance: ArrayType[np.floating],
+    scattered_beam_extinction_coef: ArrayType[np.floating],
+    beam_extinction_coef: ArrayType[np.floating],
+    leaf_area_index: ArrayType[np.floating],
     leaf_scattering_coef: float = TwoLeafConst().leaf_scattering_coef,
 ) -> NDArray[np.floating]:
     r"""Calculate the sunlit scattered irradiance.
@@ -507,6 +543,20 @@ def calculate_sunlit_scattered_irradiance(
     Returns:
         Array of sunlit scattered irradiance values.
     """
+
+    (
+        beam_irradiance,
+        beam_reflectance,
+        scattered_beam_extinction_coef,
+        beam_extinction_coef,
+        leaf_area_index,
+    ) = xarray_inputs(
+        beam_irradiance,
+        beam_reflectance,
+        scattered_beam_extinction_coef,
+        beam_extinction_coef,
+        leaf_area_index,
+    )
 
     return beam_irradiance * (
         (1 - beam_reflectance)
@@ -765,7 +815,7 @@ class TwoLeafAssimilation:
 
 
 def calculate_canopy_extinction_coef(
-    vcmax: NDArray[np.floating],
+    vcmax: ArrayType[np.floating],
     coef: tuple[float, float] = TwoLeafConst().vcmax_lloyd_coef,
 ) -> NDArray[np.floating]:
     r"""Calculate the canopy extinction coefficient.
@@ -788,14 +838,16 @@ def calculate_canopy_extinction_coef(
         The calculated :math:`kv_Lloyd` values.
     """
 
+    vcmax = xarray_inputs(vcmax)
+
     a, b = coef
     return np.exp(a * vcmax - b)
 
 
 def calculate_canopy_vcmax25(
-    leaf_area_index: NDArray[np.floating],
-    vcmax25: NDArray[np.floating],
-    canopy_extinction_coef: NDArray[np.floating],
+    leaf_area_index: ArrayType[np.floating],
+    vcmax25: ArrayType[np.floating],
+    canopy_extinction_coef: ArrayType[np.floating],
 ) -> NDArray[np.floating]:
     r"""Calculate standardised carboxylation rate in the canopy.
 
@@ -816,6 +868,11 @@ def calculate_canopy_vcmax25(
     Returns:
         The calculated Vmax25 canopy values.
     """
+
+    leaf_area_index, vcmax25, canopy_extinction_coef = xarray_inputs(
+        leaf_area_index, vcmax25, canopy_extinction_coef
+    )
+
     return (
         leaf_area_index
         * vcmax25
@@ -824,10 +881,10 @@ def calculate_canopy_vcmax25(
 
 
 def calculate_sun_vcmax25(
-    leaf_area_index: NDArray[np.floating],
-    vcmax25: NDArray[np.floating],
-    canopy_extinction_coef: NDArray[np.floating],
-    beam_extinction_coef: NDArray[np.floating],
+    leaf_area_index: ArrayType[np.floating],
+    vcmax25: ArrayType[np.floating],
+    canopy_extinction_coef: ArrayType[np.floating],
+    beam_extinction_coef: ArrayType[np.floating],
 ) -> NDArray[np.floating]:
     r"""Calculate standardised carboxylation rate of sunlit leaves.
 
@@ -850,6 +907,19 @@ def calculate_sun_vcmax25(
     Returns:
         The calculated Vmax25 sun values.
     """
+
+    (
+        leaf_area_index,
+        vcmax25,
+        canopy_extinction_coef,
+        beam_extinction_coef,
+    ) = xarray_inputs(
+        leaf_area_index,
+        vcmax25,
+        canopy_extinction_coef,
+        beam_extinction_coef,
+    )
+
     Vmax25_sun = (
         leaf_area_index
         * vcmax25
@@ -868,7 +938,7 @@ def calculate_sun_vcmax25(
 
 
 def calculate_jmax25(
-    vcmax25: NDArray[np.floating],
+    vcmax25: ArrayType[np.floating],
     coef: tuple[float, float] = TwoLeafConst().jmax25_wullschleger_coef,
 ) -> NDArray[np.floating]:
     r"""Calculate the maximum rate of electron transport.
@@ -891,12 +961,14 @@ def calculate_jmax25(
         The calculated values of :math:`J_{max25}`.
     """
 
+    vcmax25 = xarray_inputs(vcmax25)
+
     a, b = coef
     return a + b * vcmax25
 
 
 def calculate_electron_transport_rate(
-    jmax: NDArray[np.floating], absorbed_irradiance: NDArray[np.floating]
+    jmax: ArrayType[np.floating], absorbed_irradiance: ArrayType[np.floating]
 ) -> NDArray[np.floating]:
     r"""Calculate electron transport rate.
 
@@ -914,6 +986,8 @@ def calculate_electron_transport_rate(
     Returns:
         The calculated J values.
     """
+
+    jmax, absorbed_irradiance = xarray_inputs(jmax, absorbed_irradiance)
 
     # TODO  What is the source of this parameterisation?
 

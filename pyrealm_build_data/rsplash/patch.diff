@@ -1,0 +1,68 @@
+diff --git a/src/SOLAR.cpp b/src/SOLAR.cpp
+index 3f85097..6daf602 100644
+--- a/src/SOLAR.cpp
++++ b/src/SOLAR.cpp
+@@ -169,7 +169,7 @@ void SOLAR::calculate_daily_fluxes(int n, int y, double sw_in, double tc, double
+     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     tau_o = (Global::c + Global::d)*(1.0 + (2.67e-5)*elv);
+     //
+-    double r_in = 86400 * sw_in;
++    r_in = 86400 * sw_in;
+     //error at high latitudes, ra_d=0 or sw_in = 0
+ 	if (isnan(ra_d)==1 || r_in==0 || ra_d < r_in){
+ 		tau = tau_o;
+@@ -193,7 +193,7 @@ void SOLAR::calculate_daily_fluxes(int n, int y, double sw_in, double tc, double
+ 	//tau_o=0.7249
+ 	//beta=0.1898
+ 	//gamma=0.7410
+-    double sf = 0.0;
++    sf = 0.0;
+ 	sf = pow(((tau-tau_o*0.1898)/(tau_o*(1-0.1898))),(1/0.7410));
+     if(isnan(sf)==1){
+         sf = 0.0;
+@@ -216,7 +216,7 @@ void SOLAR::calculate_daily_fluxes(int n, int y, double sw_in, double tc, double
+     //albedo, assuming max snow albedo as 0.85
+     
+ 	//double alb = Global::alb_sw *(1.0-sfc)+sfc*max_alb_snw;
+-    double alb = alb_v *(1.0-sfc)+sfc*max_alb_snw;
++    alb = alb_v *(1.0-sfc)+sfc*max_alb_snw;
+     if ((sw_in == 0.0) || (hs == 0.0)){
+ 		rw = (1.0 - alb)*tau*dr*Global::Gsc;
+ 	} else {
+@@ -414,6 +414,9 @@ void SOLAR::display(){
+     printf("  tau_o: %0.6f\n", tau_o);
+     printf("  tau: %0.6f \n", tau);
+     printf("  PPFD: %0.6f mol/m^2\n", ppfd_d);
++    printf("  r_in: %0.6f \n", r_in);
++    printf("  sf: %0.6f \n", sf);
++    printf("  alb: %0.6f \n", alb);
+     printf("  Rnl: %0.6f W/m^2\n", rnl);
+     printf("  Ho: %0.6f MJ/m^2\n", (1.0e-6)*ra_d);
+     printf("  Hn: %0.6f MJ/m^2\n", (1.0e-6)*rn_d);
+diff --git a/src/SOLAR.h b/src/SOLAR.h
+index 71448fa..aaba013 100644
+--- a/src/SOLAR.h
++++ b/src/SOLAR.h
+@@ -66,6 +66,9 @@ class SOLAR {
+         double tau_o;      // surface transmittivity
+         double tau;        // elv. corrected transmittivity
+         double ppfd_d;     // daily photosynthetic photon flux density, mol/m^2
++        double r_in;         // total daily radiation
++        double alb;         // albedo
++        double sf;         // sunshine fraction
+         double rnl;        // longwave radiation flux, W/m^2
+         double rn_d;       // daily net radiation, J/m^2
+         double rnn_d;      // daily nighttime net radiation, J/m^2
+diff --git a/src/SPLASH.cpp b/src/SPLASH.cpp
+index 6c99c33..8c318cd 100644
+--- a/src/SPLASH.cpp
++++ b/src/SPLASH.cpp
+@@ -1906,6 +1906,8 @@ List SPLASH::run_all(vector<int> &doys, vector<int> &yrs, vector<double> &sw_in,
+         cond_vec[i] = dvap.cond;
+         netr_vec[i] = dvap.rn_d/1e6;
+         nds_vec[i] = dsoil.nd;   // #codespell:ignore
++
++        evap.display();
+     }
+  
+    

@@ -1,7 +1,7 @@
 #! /bin/bash
 
 # This shell script runs the commands to process the benchmark input data using the
-# original SLASH version 1 data. It runs the key commands described in the accompanying
+# original SPLASH version 1 data. It runs the key commands described in the accompanying
 # README.md.
 
 python splash_run_calc_daily_fluxes.py -i data/daily_flux_benchmark_inputs.csv -o data/daily_flux_benchmark_outputs.csv

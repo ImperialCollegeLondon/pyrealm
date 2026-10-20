@@ -6,14 +6,15 @@ the key equations used in each function.
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.constants import CoreConst, PModelConst
+from pyrealm.constants import CoreConst, KattgeKnorrArrheniusCoef, PModelConst
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.core.water import calculate_viscosity_h2o
+from pyrealm.core.xarray import ArrayType, xarray_inputs
 
 
 def calculate_simple_arrhenius_factor(
-    tk: NDArray[np.floating],
-    tk_ref: float,
+    tk: ArrayType[np.floating],
+    tk_ref: ArrayType[np.floating],
     ha: float,
     k_R: float = CoreConst().k_R,
 ) -> NDArray[np.floating]:
@@ -61,27 +62,29 @@ def calculate_simple_arrhenius_factor(
         array([88.1991])
     """
 
+    tk = xarray_inputs(tk)
+
     return np.exp(ha * (tk - tk_ref) / (tk_ref * k_R * tk))
 
 
 def calculate_kattge_knorr_arrhenius_factor(
-    tk_leaf: NDArray[np.floating],
-    tk_ref: float,
-    tc_growth: NDArray[np.floating],
-    coef: dict[str, float],
+    coef: KattgeKnorrArrheniusCoef,
+    tk_leaf: ArrayType[np.floating],
+    tk_ref: ArrayType[np.floating],
+    tc_growth: ArrayType[np.floating],
     k_R: float = CoreConst().k_R,
 ) -> NDArray[np.floating]:
     r"""Calculate an Arrhenius factor following :cite:t:`Kattge:2007db`.
 
-    This implements a "peaked" version of the Arrhenius relationship, describing a
-    decline in reaction rates at higher temperatures. In addition to the activation
-    energy (see :meth:`~pyrealm.pmodel.functions.calculate_simple_arrhenius_factor`),
-    this implementation adds an entropy term and the deactivation energy of the enzyme
-    system. The rate is given for a given instantaneous temperature :math:`T` relative
-    to a reference temperature :math:T_0`, both given in Kelvin, but the entropy is
-    calculated using a separate estimate of the growth temperature for a plant,
-    expressed in °C.
-
+    This implements the peaked Arrhenius relationship of :cite:t:`Kattge:2007db`, that
+    captures declining in reaction rates at higher temperatures. In addition to the
+    activation energy (see
+    :meth:`~pyrealm.pmodel.functions.calculate_simple_arrhenius_factor`), this
+    implementation adds an activation entropy term and the deactivation energy of the
+    enzyme system. The rate is given for a given instantaneous temperature :math:`T`
+    relative to a reference temperature :math:T_0`, both given in Kelvin, but the
+    entropy is calculated using a separate estimate of the mean growth temperature for a
+    plant, expressed in °C.
 
     .. math::
         :nowrap:
@@ -97,26 +100,38 @@ def calculate_kattge_knorr_arrhenius_factor(
                       \left(\frac{T}{T_0}\right)
             \end{align*}
 
-            \text{where,}
-
-            \Delta S = a + b * t_g
-
         \]
 
-    The coefficients dictionary must provide entries for:
+    In the original paper :cite:t:`Kattge:2007db`, the activation entropy (:math:`\Delta
+    S`) is a linear function of mean growth temperature:
+
+    .. math::
+
+        \Delta S = a + b * t_g
+
+    This formulation can lead to extreme values in tropical conditions and
+    {cite}`sandoval:2026a` introduced an alternative formulation as a power law:
+
+    .. math::
+
+        \Delta S = a * t_g ^ b
+
+    The coefficients object provides entries for:
 
     * ha: The activation energy of the enzyme (:math:`H_a`)
     * hd: The deactivation energy of the enzyme (:math:`H_d`)
     * entropy_intercept: The intercept of the entropy relationship (:math:`a`)
     * entropy_slope: The slope of the entropy relationship (:math:`b`)
+    * entropy_method: One of "linear" or "power"
 
     Args:
+        coef: A dictionary providing values of the coefficients ``ha``,
+            ``hd``, ``entropy_intercept``, ``entropy_slope`` and ``entropy_method``.
         tk_leaf: The instantaneous temperature in Kelvin (K) at which to calculate the
             factor (:math:`T`)
         tk_ref: The reference temperature in Kelvin for the process (:math:`T_0`)
-        tc_growth: The growth temperature of the plants in °C (:math:`t_g`)
-        coef: A dictionary providing values of the coefficients ``ha``,
-            ``hd``, ``entropy_intercept`` and ``entropy_slope``.
+        tc_growth: The growth temperature of the plants in °C (:math:`t_g`), required to
+            calculate the activation entropy.
         k_R: The universal gas constant, defaulting to the value from
             attr:`~pyrealm.constants.core_const.CoreConst.k_R`.
 
@@ -141,23 +156,29 @@ def calculate_kattge_knorr_arrhenius_factor(
         array([0.261])
     """
 
-    # Calculate entropy as a function of temperature _in °C_
-    entropy = coef["entropy_intercept"] + coef["entropy_slope"] * tc_growth
+    tk_leaf, tk_ref, tc_growth = xarray_inputs(tk_leaf, tk_ref, tc_growth)
+
+    if coef.entropy_method == "linear":
+        entropy = coef.entropy_intercept + coef.entropy_slope * tc_growth
+    elif coef.entropy_method == "power":
+        entropy = coef.entropy_intercept * tc_growth**coef.entropy_slope
+    else:
+        raise ValueError(f"Unknown entropy method: {coef.entropy_method}")
 
     # Calculate Arrhenius components
     fva = calculate_simple_arrhenius_factor(
-        tk=tk_leaf, ha=coef["ha"], tk_ref=tk_ref, k_R=k_R
+        tk=tk_leaf, ha=coef.ha, tk_ref=tk_ref, k_R=k_R
     )
 
-    fvb = (1 + np.exp((tk_ref * entropy - coef["hd"]) / (k_R * tk_ref))) / (
-        1 + np.exp((tk_leaf * entropy - coef["hd"]) / (k_R * tk_leaf))
+    fvb = (1 + np.exp((tk_ref * entropy - coef.hd) / (k_R * tk_ref))) / (
+        1 + np.exp((tk_leaf * entropy - coef.hd) / (k_R * tk_leaf))
     )
 
     return fva * fvb
 
 
-def calc_ftemp_inst_rd(
-    tc: NDArray[np.floating],
+def calculate_ftemp_inst_rd(
+    tc: ArrayType[np.floating],
     tc_ref: float = PModelConst().tc_ref,
     coef: tuple[float, float] = PModelConst().heskel_rd,
 ) -> NDArray[np.floating]:
@@ -182,10 +203,10 @@ def calc_ftemp_inst_rd(
         >>> # Relative instantaneous change in Rd going from 10 to 25 degrees
         >>> pmod_consts = PModelConst()
         >>> (
-        ...     calc_ftemp_inst_rd(
+        ...     calculate_ftemp_inst_rd(
         ...         tc=25, tc_ref=pmod_consts.tc_ref, coef=pmod_consts.heskel_rd
         ...     )
-        ...     / calc_ftemp_inst_rd(
+        ...     / calculate_ftemp_inst_rd(
         ...         tc=10, tc_ref=pmod_consts.tc_ref, coef=pmod_consts.heskel_rd
         ...     )
         ...     - 1
@@ -193,12 +214,14 @@ def calc_ftemp_inst_rd(
         np.float64(2.5096)
     """
 
+    tc = xarray_inputs(tc)
+
     return np.exp(coef[0] * (tc - tc_ref) - coef[1] * (tc**2 - tc_ref**2))
 
 
-def calc_gammastar(
-    tk: NDArray[np.floating],
-    patm: NDArray[np.floating],
+def calculate_gammastar(
+    tk: ArrayType[np.floating],
+    patm: ArrayType[np.floating],
     tk_ref: float = PModelConst().tk_ref,
     k_Po: float = CoreConst().k_Po,
     k_R: float = CoreConst().k_R,
@@ -236,9 +259,11 @@ def calc_gammastar(
 
     Examples:
         >>> # CO2 compensation point at 20 °C  (293.15 K) and standard pressure
-        >>> calc_gammastar(np.array([293.15]), np.array([101325])).round(5)
+        >>> calculate_gammastar(np.array([293.15]), np.array([101325])).round(5)
         array([3.33925])
     """
+
+    tk, patm = xarray_inputs(tk, patm)
 
     # check inputs, return shape not used
     _ = check_input_shapes(tk, patm)
@@ -253,9 +278,9 @@ def calc_gammastar(
     )
 
 
-def calc_ns_star(
-    tk: NDArray[np.floating],
-    patm: NDArray[np.floating],
+def calculate_ns_star(
+    tk: ArrayType[np.floating],
+    patm: ArrayType[np.floating],
     core_const: CoreConst = CoreConst(),
 ) -> NDArray[np.floating]:
     r"""Calculate the relative viscosity of water.
@@ -282,9 +307,11 @@ def calc_ns_star(
 
     Examples:
         >>> # Relative viscosity at 293.15 K (20°C):
-        >>> round(calc_ns_star(293.15, 101325), 5)
-        np.float64(1.12536)
+        >>> round(calculate_ns_star(293.15, 101325), 5)
+        np.float64(1.12592)
     """
+
+    tk, patm = xarray_inputs(tk, patm)
 
     visc_env = calculate_viscosity_h2o(tk=tk, patm=patm, core_const=core_const)
     visc_std = calculate_viscosity_h2o(
@@ -296,9 +323,9 @@ def calc_ns_star(
     return visc_env / visc_std
 
 
-def calc_kmm(
-    tk: NDArray[np.floating],
-    patm: NDArray[np.floating],
+def calculate_kmm(
+    tk: ArrayType[np.floating],
+    patm: ArrayType[np.floating],
     tk_ref: float = PModelConst().tk_ref,
     k_co: float = CoreConst().k_co,
     k_R: float = CoreConst().k_R,
@@ -345,9 +372,11 @@ def calc_kmm(
 
     Examples:
         >>> # Michaelis-Menten coefficient at 20°C (293.15K) and standard pressure (Pa)
-        >>> calc_kmm(np.array([293.15]), np.array([101325])).round(5)
+        >>> calculate_kmm(np.array([293.15]), np.array([101325])).round(5)
         array([46.09928])
     """
+
+    tk, patm = xarray_inputs(tk, patm)
 
     # Check inputs, return shape not used
     _ = check_input_shapes(tk, patm)
@@ -366,9 +395,9 @@ def calc_kmm(
     return kc * (1.0 + po / ko)
 
 
-def calc_soilmstress_stocker(
-    soilm: NDArray[np.floating],
-    meanalpha: NDArray[np.floating] = np.array(1.0),
+def calculate_soilmstress_stocker(
+    soilm: ArrayType[np.floating],
+    meanalpha: ArrayType[np.floating] = np.array(1.0),
     coef: dict[str, float] = PModelConst().soilmstress_stocker,
 ) -> NDArray[np.floating]:
     r"""Calculate Stocker's empirical soil moisture stress factor.
@@ -454,12 +483,14 @@ def calc_soilmstress_stocker(
 
     Examples:
         >>> # Proportion of well-watered GPP available at soil moisture of 0.2
-        >>> calc_soilmstress_stocker(np.array([0.2])).round(5)
+        >>> calculate_soilmstress_stocker(np.array([0.2])).round(5)
         array([0.88133])
     """
 
     # TODO - move soilm params into standalone param class for this function -
     #        keep the PModelConst cleaner?
+
+    soilm, meanalpha = xarray_inputs(soilm, meanalpha)
 
     # Check inputs, return shape not used
     _ = check_input_shapes(soilm, meanalpha)
@@ -478,15 +509,15 @@ def calc_soilmstress_stocker(
     return outstress
 
 
-def calc_soilmstress_mengoli(
-    soilm: NDArray[np.floating] = np.array(1.0),
-    aridity_index: NDArray[np.floating] = np.array(1.0),
+def calculate_soilmstress_mengoli(
+    soilm: ArrayType[np.floating] = np.array(1.0),
+    aridity_index: ArrayType[np.floating] = np.array(1.0),
     coef: dict[str, float] = PModelConst().soilmstress_mengoli,
 ) -> NDArray[np.floating]:
     r"""Calculate the Mengoli et al. empirical soil moisture stress factor.
 
     This function calculates a penalty factor :math:`\beta(\theta)` for well-watered GPP
-    estimates as an empirically derived stress factor :cite:p:`mengoli:2023a`. The
+    estimates as an empirically derived stress factor :cite:p:`mengoli:2025a`. The
     factor is calculated from relative soil moisture as a fraction of field capacity
     (:math:`\theta`) and the long-run climatological aridity index for a site
     (:math:`\textrm{AI}`), calculated as (total PET)/(total precipitation) for a
@@ -521,7 +552,7 @@ def calc_soilmstress_mengoli(
         
         There are minor differences in the implementation of the Subdaily P Model in
         ``pyrealm`` from that used to calibrate this function in
-        :cite:p:`mengoli:2023a`. To get the closest match when applying this
+        :cite:p:`mengoli:2025a`. To get the closest match when applying this
         soil moisture correction, use the following settings:
 
         .. code-block:: python
@@ -552,12 +583,14 @@ def calc_soilmstress_mengoli(
         >>> import numpy as np
         >>> # Proportion of well-watered GPP available with soil moisture and aridity
         >>> # index values of 0.6
-        >>> calc_soilmstress_mengoli(np.array([0.6]), np.array([0.6])).round(5)
+        >>> calculate_soilmstress_mengoli(np.array([0.6]), np.array([0.6])).round(5)
         array([0.78023])
     """
 
     # TODO - move soilm params into standalone param class for this function -
     #        keep the PModelConst cleaner?
+
+    soilm, aridity_index = xarray_inputs(soilm, aridity_index)
 
     # Check inputs, return shape not used
     _ = check_input_shapes(soilm, aridity_index)
@@ -577,8 +610,8 @@ def calc_soilmstress_mengoli(
     return np.where(soilm >= psi, y, (y / psi) * soilm)
 
 
-def calc_co2_to_ca(
-    co2: NDArray[np.floating], patm: NDArray[np.floating]
+def calculate_co2_to_ca(
+    co2: ArrayType[np.floating], patm: ArrayType[np.floating]
 ) -> NDArray[np.floating]:
     r"""Convert :math:`\ce{CO2}` ppm to Pa.
 
@@ -593,8 +626,10 @@ def calc_co2_to_ca(
         Ambient :math:`\ce{CO2}` in units of Pa
 
     Examples:
-        >>> np.round(calc_co2_to_ca(413.03, 101325), 6)
+        >>> np.round(calculate_co2_to_ca(413.03, 101325), 6)
         np.float64(41.850265)
     """
+
+    co2, patm = xarray_inputs(co2, patm)
 
     return 1.0e-6 * co2 * patm  # Pa, atms. CO2

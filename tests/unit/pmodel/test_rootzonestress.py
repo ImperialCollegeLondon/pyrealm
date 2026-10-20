@@ -33,6 +33,7 @@ from numpy.testing import assert_allclose
 )
 def test_rootzonestress(method, expected_chi):
     """Tests the optimal chi methods that support rootzonestress."""
+    from pyrealm.constants import CoreConst
     from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY
     from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 
@@ -45,6 +46,9 @@ def test_rootzonestress(method, expected_chi):
         rootzonestress=np.linspace(0, 1, n_vals),
         fapar=np.repeat(1, n_vals),
         ppfd=np.repeat(800, n_vals),
+        core_const=CoreConst(
+            water_density_method="fisher", water_viscosity_method="huber"
+        ),
     )
 
     optchi_class = OPTIMAL_CHI_CLASS_REGISTRY[method]

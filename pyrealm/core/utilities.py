@@ -238,7 +238,21 @@ def exponential_moving_average(
     if initial_values is None:
         smoothed_values[0] = values[0]
     else:
-        smoothed_values[0] = initial_values * (1 - alpha) + values[0] * alpha
+        # If initial_values is set, ensure the shape is correct
+        _initial_values = np.asarray(initial_values)
+        shape = np.atleast_1d(values[0]).shape
+        try:
+            np.broadcast_to(_initial_values, shape)
+        except ValueError:
+            msg = (
+                "The shape of initial_values is incorrect in exponential_moving_average"
+                f": {_initial_values.shape} != {shape}"
+            )
+            raise ValueError(msg)
+        if _initial_values.ndim == 1 and _initial_values.size == 1:
+            _initial_values = _initial_values.item()
+        # Get the first output value(s) using initial_values as X_-1
+        smoothed_values[0] = _initial_values * (1 - alpha) + values[0] * alpha
 
     # Handle the data if there are no missing data,
     if not nan_present:

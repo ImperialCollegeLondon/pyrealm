@@ -11,10 +11,11 @@ from numpy.typing import NDArray
 from pyrealm.constants import CoreConst
 from pyrealm.core.bounds import BoundsChecker
 from pyrealm.core.calendar import Calendar
-from pyrealm.core.pressure import calc_patm
+from pyrealm.core.pressure import calculate_patm
 from pyrealm.core.time_series import broadcast_time
 from pyrealm.core.utilities import check_input_shapes
-from pyrealm.splash.evap import DailyEvapFluxes
+from pyrealm.core.xarray import ArrayType, get_common_dims, xarray_inputs
+from pyrealm.splash.evap import DailyEvaporativeFluxes
 from pyrealm.splash.solar import DailySolarFluxes
 
 
@@ -23,56 +24,122 @@ class SplashModel:
 
     The SplashModel class calculates the predictions of the SPLASH v1.0 model
     :cite:p:`davis:2017a`. The input variables of latitude, elevation, temperature,
-    precipitation and sunshine fraction of observations are initially used to calculate
-    solar and evaporative fluxes, which are stored in the ``solar`` and ``evap``
-    attributes as instances of :class:`~pyrealm.splash.solar.DailySolarFluxes` and
-    :class:`~pyrealm.splash.evap.DailyEvapFluxes`.
+    precipitation and incoming solar radiation of observations are initially used to
+    calculate solar and evaporative fluxes, which are stored in the ``solar`` and
+    ``evap`` attributes as instances of :class:`~pyrealm.splash.solar.DailySolarFluxes`
+    and :class:`~pyrealm.splash.evap.DailyEvaporativeFluxes`.
 
-    The inputs to a SplashModel are expected to be numpy arrays with time varying along
-    the first dimension. Other dimensions represent observations at sites on a
-    particular date.  The ``dates`` argument is expected to be a Calendar object with
-    the same length as the first dimension.
+    There are two options for providing radiation inputs:
+
+    * Sunshine fraction:  this was used in the original SPLASH implementation
+      :cite:p:`davis:2017a` and is provided as the radiation input variable in - for
+      example - the CRU climate datasets.
+
+    * Shortwave radiation: the SPLASH v2 model :cite:p:`sandoval:2024a` updated the
+      calculation of solar fluxes to use data on shortwave downwelling radiation. This
+      is provided as a radiation input in many other datasets, such as FluxNET sites and
+      ERA5.
+
+    The inputs to a SplashModel are expected to be arrays with time varying along the
+    first dimension. Other dimensions represent observations at sites on a particular
+    date.  The ``dates`` argument is expected to be a Calendar object with the same
+    length as the first dimension.    If xarray inputs are used, ``dates`` should also
+    be initialised using xarray inputs to ensure that the time dimension is set
+    correctly.
 
     The main use of the SplashModel object is then to calculate the expected actual
     evapotranspiration (AET), soil moisture and runoff across the time series:
 
-    * The :meth:`~pyrealm.splash.splash.SplashModel.calculate_soil_moisture` returns
-      these calculations, given an initial estimate of soil moisture in observed sites.
-      This method simply iterates over the days, applying the
-      :meth:`~pyrealm.splash.splash.SplashModel.estimate_daily_water_balance` method to
-      calculate the daily water balance, given the soil moisture of the preceding day.
-
     * The :meth:`~pyrealm.splash.splash.SplashModel.estimate_initial_soil_moisture`
-      method can be used to estimate an initial soil moisture for a time series from the
-      first year of data in a time series.
+      method can be used to estimate the initial soil moisture from the first year of
+      data.
+
+    * The :meth:`~pyrealm.splash.splash.SplashModel.calculate_soil_moisture` then takes
+      the initial estimate of soil moisture in observed sites and iterates over the
+      days, applying the
+      :meth:`~pyrealm.splash.splash.SplashModel.estimate_daily_water_balance` method to
+      calculate the daily water balance across the whole time series.
 
     Args:
-        lat: The latitude of observations
-        elv: The elevation of observations (m), also used to calculate atmospheric
+        latitude: The latitude of observations
+        elevation: The elevation of observations (m), also used to calculate atmospheric
             pressure.
-        sf: The sunshine fraction (0-1, unitless)
-        tc: Air temperature (°C)
-        pn: Precipitation (mm/day)
+        temperature: Air temperature (°C)
+        precipitation: Precipitation (mm/day)
         dates: The dates of the time series
-        kWm: The maximum soil moisture capacity, defaulting to 150 (mm)
+        sunshine_fraction: The sunshine fraction (0-1, unitless)
+        shortwave_radiation: Downwelling shortwave radiation (W m-2).
+        soil_capacity: The maximum soil moisture capacity, defaulting to 150 (mm)
+        core_const: A core constants instance.
+        bounds_checker: A bounds checker instance.
     """
 
     def __init__(
         self,
-        lat: NDArray[np.floating],
-        elv: NDArray[np.floating],
-        sf: NDArray[np.floating],
-        tc: NDArray[np.floating],
-        pn: NDArray[np.floating],
+        latitude: ArrayType[np.floating],
+        elevation: ArrayType[np.floating],
+        temperature: ArrayType[np.floating],
+        precipitation: ArrayType[np.floating],
         dates: Calendar,
-        kWm: NDArray[np.floating] = np.array([150.0]),
+        sunshine_fraction: ArrayType[np.floating] | None = None,
+        shortwave_radiation: ArrayType[np.floating] | None = None,
+        soil_capacity: ArrayType[np.floating] = np.array([150.0]),
         core_const: CoreConst = CoreConst(),
         bounds_checker: BoundsChecker = BoundsChecker(),
     ):
+        # Declare, type and docstring attributes
+        self.elevation: NDArray[np.floating]
+        """The elevation of sites."""
+        self.latitude: NDArray[np.floating]
+        """The latitude of sites."""
+        self.temperature: NDArray[np.floating]
+        """The air temperature in °C of daily observations."""
+        self.precipitation: NDArray[np.floating]
+        """The precipitation in mm of daily observations."""
+        self.soil_capacity: NDArray[np.floating]
+        """The maximum soil water capacity for sites (mm)."""
+        self.dates: Calendar = dates
+        """The dates of observations along the first array axis."""
+        self.sunshine_fraction: NDArray[np.floating] | None = None
+        """The sunshine fraction (0-1) of daily observations."""
+        self.shortwave_radiation: NDArray[np.floating] | None = None
+        """The downwelling shortwave radiation of daily observations (W m-2)."""
+
+        # Handle sunshine fraction vs shortwave radiation
+        if (sunshine_fraction is None) == (shortwave_radiation is None):
+            raise ValueError("Provide one of sunshine_fraction or shortwave_radiation")
+
+        # Get a single array object for validation
+        if sunshine_fraction is not None:
+            radiation_input = sunshine_fraction
+        elif shortwave_radiation is not None:
+            radiation_input = shortwave_radiation
+
+        # Ensure first dimension is time if dates is also initialised with xarray
+        self.dims = get_common_dims(
+            elevation,
+            latitude,
+            temperature,
+            precipitation,
+            radiation_input,
+            init_dims=dates.dims,
+        )
+        # Convert array inputs to numpy
+        (elevation, latitude, temperature, precipitation, radiation_input) = (
+            xarray_inputs(
+                elevation,
+                latitude,
+                temperature,
+                precipitation,
+                radiation_input,
+                dims=self.dims,
+            )
+        )
+
         # Check input sizes are congurent
-        # TODO - xarray would be good here for identifying axes and
-        #        checking congruence more widely.
-        self.shape: tuple = check_input_shapes(elv, lat, sf, tc, pn)
+        self.shape: tuple = check_input_shapes(
+            elevation, latitude, temperature, precipitation, radiation_input
+        )
         """The array shape of the input variables"""
 
         if self.shape[0] == 1:
@@ -85,50 +152,58 @@ class SplashModel:
 
         # Broadcast all the inputs over time to simplify the daily indexing if any
         # inputs are constant over time
-        elv = broadcast_time(elv, self.shape)
-        lat = broadcast_time(lat, self.shape)
-        sf = broadcast_time(sf, self.shape)
-        tc = broadcast_time(tc, self.shape)
-        pn = broadcast_time(pn, self.shape)
+        elevation = broadcast_time(elevation, self.shape)
+        latitude = broadcast_time(latitude, self.shape)
+        temperature = broadcast_time(temperature, self.shape)
+        precipitation = broadcast_time(precipitation, self.shape)
+        radiation_input = broadcast_time(radiation_input, self.shape)
 
-        self.elv: NDArray[np.floating] = elv
-        """The elevation of sites."""
-        self.lat: NDArray[np.floating] = bounds_checker.check("lat", lat)
-        """The latitude of sites."""
-        self.sf: NDArray[np.floating] = bounds_checker.check("sf", sf)
-        """The sunshine fraction (0-1) of daily observations."""
-        self.tc: NDArray[np.floating] = bounds_checker.check("tc", tc)
-        """The air temperature in °C of daily observations."""
-        self.pn: NDArray[np.floating] = bounds_checker.check("pn", pn)
-        """The precipitation in mm of daily observations."""
-        self.dates: Calendar = dates
-        """The dates of observations along the first array axis."""
-        self.kWm: NDArray[np.floating] = bounds_checker.check("kWm", kWm)
-        """The maximum soil water capacity for sites."""
+        self.elevation = bounds_checker.check("elevation", elevation)
+        self.latitude = bounds_checker.check("latitude", latitude)
+        self.temperature = bounds_checker.check("tc", temperature)
+        self.precipitation = bounds_checker.check("precipitation", precipitation)
+        self.kWm = bounds_checker.check("soil_capacity", soil_capacity)
+
+        # Assign radiation variable back to the appropriate attribute
+        if sunshine_fraction is not None:
+            self.sunshine_fraction = bounds_checker.check(
+                "sunshine_fraction", radiation_input
+            )
+        else:
+            self.shortwave_radiation = bounds_checker.check(
+                "shortwave_radiation", radiation_input
+            )
 
         # TODO - potentially allow _actual_ climatic pressure data as an input
-        self.pa: NDArray[np.floating] = calc_patm(elv, core_const=core_const)
+        self.patm: NDArray[np.floating] = calculate_patm(
+            elevation=elevation, core_const=core_const
+        )
         """The atmospheric pressure at sites, derived from elevation"""
 
         # Calculate the daily solar fluxes - these are invariant across the simulation
         self.solar: DailySolarFluxes = DailySolarFluxes(
-            latitude=lat,
-            elevation=elv,
+            latitude=self.latitude,
+            elevation=self.elevation,
             dates=dates,
-            sunshine_fraction=sf,
-            temperature=tc,
+            sunshine_fraction=self.sunshine_fraction,
+            shortwave_radiation=self.shortwave_radiation,
+            temperature=self.temperature,
+            core_const=core_const,
         )
         """Estimated solar fluxes for observations"""
 
         # Initialise the evaporative flux class
-        self.evap: DailyEvapFluxes = DailyEvapFluxes(
-            solar=self.solar, pa=self.pa, tc=tc, core_const=core_const
+        self.evap: DailyEvaporativeFluxes = DailyEvaporativeFluxes(
+            solar=self.solar,
+            patm=self.patm,
+            temperature=self.temperature,
+            core_const=core_const,
         )
         """Estimated evaporative fluxes for observations"""
 
     def estimate_initial_soil_moisture(
         self,
-        wn_init: NDArray[np.floating] | None = None,
+        initial_soil_moisture: ArrayType[np.floating] | None = None,
         max_iter: int = 10,
         max_diff: float = 1.0,
         return_convergence: bool = False,
@@ -151,7 +226,7 @@ class SplashModel:
         at each iteration regardless of the success of convergence.
 
         Args:
-            wn_init: An optional estimate of the start of year soil moisture.
+            initial_soil_moisture: An optional estimate of initial soil moisture.
             max_iter: The maximum number of iterations used to achieve convergence.
             max_diff: The maximum acceptable difference between year start and year end
                 soil moisture,
@@ -176,12 +251,15 @@ class SplashModel:
         n_iter = 0
         wn_ret = []
 
-        if wn_init is not None:
+        if initial_soil_moisture is not None:
+            wn_init = xarray_inputs(initial_soil_moisture, dims=self.dims[1:])
             # Check the shape is the same as the shape of a slice along axis 0
             if wn_init.shape != self.shape[1:]:
                 raise ValueError("Incorrect shape in wn_init")
             if np.any((wn_init < 0) | (wn_init > self.kWm)):
-                raise ValueError("Soil moisture must be between 0 and kWm")
+                raise ValueError(
+                    "Soil moisture must be between 0 and the soil capacity."
+                )
             wn_start = wn_init
         else:
             wn_start = np.zeros(self.shape[1:])
@@ -204,7 +282,7 @@ class SplashModel:
             for day_idx in range(num_days):
                 # Calculate aet, soil moisture and runoff:
                 _, wn_day, _ = self.estimate_daily_water_balance(
-                    previous_wn=wn_day, day_idx=day_idx
+                    previous_soil_moisture=wn_day, day_index=day_idx
                 )
 
             # Calculate the difference between the start of year soil moisture and the
@@ -241,7 +319,9 @@ class SplashModel:
             return wn_start
 
     def estimate_daily_water_balance(
-        self, previous_wn: NDArray[np.floating], day_idx: int | None = None
+        self,
+        previous_soil_moisture: ArrayType[np.floating],
+        day_index: int | None = None,
     ) -> tuple[NDArray[np.floating], NDArray[np.floating], NDArray[np.floating]]:
         r"""Estimate the daily water balance.
 
@@ -257,19 +337,21 @@ class SplashModel:
             W_{n[t]} = W_{n[t-1]} + P_{[t]} + C_{[t]} - \textrm{AET}_{[t]}.
 
         When the resulting soil moisture exceeds the maximum capacity of the soil
-        (``kWm``), the excess is allocated to run off, leaving the soil saturated. Note
-        that the soil moisture is not altered by subsurface flow: there is not vertical
-        or horizontal transfer of water from the soil, only losses through
-        evapotranspiration. Negative soil moisture values are replaced by zero.
+        (:attr:{soil_capacity}, :math:`W_m`), the excess is allocated to run off,
+        leaving the soil saturated. Note that the soil moisture is not altered by
+        subsurface flow: there is not vertical or horizontal transfer of water from the
+        soil, only losses through evapotranspiration. Negative soil moisture values are
+        replaced by zero.
 
-        By default, ``previous_wn`` is expected to provide estimates for all
-        observations across all days in the model, but ``day_idx`` can be set to provide
-        an estimate for only one particular day, for use in iterating over time series.
+        By default, ``previous_soil_moisture`` is expected to provide estimates for all
+        observations across all days in the model, but ``day_index`` can be set to
+        provide an estimate for only one particular day, for use in iterating over time
+        series.
 
         Args:
-            day_idx: Optionally, the index of the date for which to calculate water
+            previous_soil_moisture: Soil moisture estimates for the preceding day (mm)
+            day_index: Optionally, the index of the date for which to calculate water
                 balance.
-            previous_wn: Soil moisture estimates for the preceding day (mm)
 
         Returns:
             A tuple of numpy arrays containing estimated  AET, daily soil moisture and
@@ -278,12 +360,16 @@ class SplashModel:
 
         # Check day_idx inputs to map either the single time index given in day_idx or
         # the whole dataset.
-        if day_idx is None:
+        if day_index is None:
+            splash_dims = self.dims
             splash_shape = self.shape
             didx: int | slice = slice(self.shape[0])
         else:
+            splash_dims = self.dims[1:]
             splash_shape = self.shape[1:]
-            didx = day_idx
+            didx = day_index
+
+        previous_wn = xarray_inputs(previous_soil_moisture, dims=splash_dims)
         try:
             check_input_shapes(previous_wn, shape=splash_shape)
         except ValueError:
@@ -296,10 +382,12 @@ class SplashModel:
         if np.any((previous_wn < 0) | (previous_wn > self.kWm)):
             raise ValueError("Soil moisture must be between 0 and kWm")
 
-        aet = self.evap.estimate_aet(wn=previous_wn, day_idx=day_idx)
+        aet = self.evap.estimate_aet(soil_moisture=previous_wn, day_index=day_index)
 
         # Calculate current soil moisture, mm
-        current_wn = previous_wn + self.pn[didx] + self.evap.cond[didx] - aet
+        current_wn = (
+            previous_wn + self.precipitation[didx] + self.evap.condensation[didx] - aet
+        )
 
         # Partition current_wn into soil moisture and runoff (ro), mm
         # - allocate excess sm to runoff and clip out negative sm
@@ -312,7 +400,7 @@ class SplashModel:
 
     def calculate_soil_moisture(
         self,
-        wn_init: NDArray[np.floating],
+        initial_soil_moisture: ArrayType[np.floating],
     ) -> tuple[NDArray[np.floating], NDArray[np.floating], NDArray[np.floating]]:
         """Calculate the soil moisture, AET and runoff from a SplashModel.
 
@@ -324,22 +412,25 @@ class SplashModel:
         runoff and for all sites across the time series.
 
         Args:
-            wn_init: The initial state of the soil moisture for observations
+            initial_soil_moisture: Estimated initial soil moisture for observations.
 
         Returns:
             A tuple of numpy arrays containing predicted AET, soil moisture and runoff.
         """
 
+        wn_init = xarray_inputs(initial_soil_moisture, dims=self.dims[1:])
         try:
             check_input_shapes(wn_init, shape=self.shape[1:])
         except ValueError:
-            msg = "The shape of wn_init does not match the existing SPLASH model data"
-            raise ValueError(msg)
+            raise ValueError(
+                "The shape of initial_soil_moisture does not match the "
+                "existing SPLASH model data"
+            )
 
         # Create storage for outputs
-        aet_out = np.full_like(self.tc, np.nan)
-        wn_out = np.full_like(self.tc, np.nan)
-        ro_out = np.full_like(self.tc, np.nan)
+        aet_out = np.full(self.shape, np.nan)
+        wn_out = np.full(self.shape, np.nan)
+        ro_out = np.full(self.shape, np.nan)
 
         if np.any((wn_init < 0) | (wn_init > self.kWm)):
             raise ValueError("Soil moisture must be between 0 and kWm")
@@ -350,8 +441,14 @@ class SplashModel:
             # Calculate the balance for this date, updating the input for
             # the following day
             aet, curr_wn, ro = self.estimate_daily_water_balance(
-                curr_wn, day_idx=day_idx
+                previous_soil_moisture=curr_wn, day_index=day_idx
             )
+
+            # Convert the outputs to scalars if there is only a time axis
+            if len(self.shape) == 1:
+                aet = aet.squeeze()
+                curr_wn = curr_wn.squeeze()
+                ro = ro.squeeze()
 
             # Store the outputs to return
             aet_out[day_idx] = aet

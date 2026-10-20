@@ -23,8 +23,14 @@ language_info:
 
 # Extreme forcing values
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here
-</_static/ExtremeForcingValues.ipynb>`.
+```{admonition} Run this notebook
+:class: hint
+
+* Read the guide on setting up your computer to [run Jupyter
+  notebooks](../../getting_started.md)
+* Download {nb-download}`this notebook<./extreme_values.ipynb>` as a Jupyter notebook.
+
+```
 
 The four photosynthetic environment variables and the effect of temperature on the
 temperature dependence of quantum yield efficiency are all calculated directly from the
@@ -78,7 +84,7 @@ from matplotlib import pyplot
 import numpy as np
 from pyrealm.core.water import calculate_density_h2o
 from pyrealm.constants import CoreConst
-from pyrealm.pmodel import calc_gammastar, calc_kmm, PModelEnvironment
+from pyrealm.pmodel import calculate_gammastar, calculate_kmm, PModelEnvironment
 from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature
 
 
@@ -125,7 +131,9 @@ tk_1d = tc_1d + core_const.k_CtoK
 fig, ax = pyplot.subplots(1, 1)
 
 for patm in [3, 7, 9, 11, 13]:
-    pyplot.plot(tc_1d, calc_gammastar(tk=tk_1d, patm=patm * 1000), label=f"{patm} kPa")
+    pyplot.plot(
+        tc_1d, calculate_gammastar(tk=tk_1d, patm=patm * 1000), label=f"{patm} kPa"
+    )
 
 ax.set_title("Temperature and pressure dependence of $\Gamma^*$")
 ax.set_xlabel("Temperature °C")
@@ -147,7 +155,7 @@ fig, ax = pyplot.subplots(1, 1)
 
 # Calculate K_mm
 for patm in [3, 7, 9, 11, 13]:
-    ax.plot(tc_1d, calc_kmm(tk=tk_1d, patm=patm * 1000), label=f"{patm} kPa")
+    ax.plot(tc_1d, calculate_kmm(tk=tk_1d, patm=patm * 1000), label=f"{patm} kPa")
 
 # Create a contour plot of gamma
 ax.set_title("Temperature and pressure dependence of KMM")

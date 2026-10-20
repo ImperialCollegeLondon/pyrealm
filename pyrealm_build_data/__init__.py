@@ -17,5 +17,7 @@ Note that ``pyrealm_build_data`` is a source distribution only (``sdist``) compo
 ``pyrealm``, so is not included in binary distributions (``wheel``) that are typically
 installed by end users. This means that files in ``pyrealm_build_data`` are not
 available if a user has simply used ``pip install pyrealm``: please *do not* use
-``pyrealm_build_data`` within the main ``pyrealm`` code.
+``pyrealm_build_data`` within the main ``pyrealm`` code. See the
+:mod:`pyrealm.core.datasets` module for methods to give users access to these datasets
+in notebooks.
 """  # noqa: D205, D415
